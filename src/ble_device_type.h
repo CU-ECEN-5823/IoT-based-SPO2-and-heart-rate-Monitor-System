@@ -23,8 +23,10 @@
 // For your Bluetooth Client implementations.
 // Set this #define to the bd_addr of the Gecko that will be your Server.
 //                   bd_addr  [0]   [1]   [2]   [3]   [4]   [5] <- array indices
-#define SERVER_BT_ADDRESS {{ 0x85, 0x61, 0x17, 0x57, 0x0b, 0x00 }}
-
+#define SERVER_BT_ADDRESS (bd_addr) {              \
+        .addr = { 0x0B, 0x63, 0x17, 0x57, 0x0B, 0x00 } \
+}
+/*    .addr = { 0x22, 0x03, 0x92, 0x27, 0xFD, 0x84 } \ */ // Board Number 234
 
 #if DEVICE_IS_BLE_SERVER
 

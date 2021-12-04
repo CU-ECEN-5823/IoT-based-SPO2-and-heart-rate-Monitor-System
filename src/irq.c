@@ -18,6 +18,7 @@
 #include "src/log.h"
 
 uint8_t cycles=0;
+int32_t flags;
 
 //Added for Assignment - 2
 /**************************************************************************//**
@@ -50,6 +51,30 @@ uint8_t cycles=0;
 //
 //  I2C_IntEnable(I2C0,I2C_IEN_MSTOP);
 //}
+
+/**************************************************************************//**
+ * This function initiates all the required NVICs
+ *
+ * @param:
+ *      no params
+ *
+ * @return:
+ *      no returns
+ *****************************************************************************/
+void NVIC_Init(void)
+{
+  NVIC_ClearPendingIRQ(LETIMER0_IRQn); // We will clear all pending flags in the NVIC for LETIMER
+  NVIC_SetPriority(LETIMER0_IRQn, 16);
+  NVIC_EnableIRQ(LETIMER0_IRQn); // Enabling the NVIC IRQ
+
+  NVIC_ClearPendingIRQ(GPIO_EVEN_IRQn); // We will clear all pending flags in the NVIC for GPIO Even pins
+  NVIC_ClearPendingIRQ(GPIO_ODD_IRQn); // We will clear all pending flags in the NVIC for GPIO Odd pins
+
+  NVIC_SetPriority(GPIO_EVEN_IRQn, 4);
+  NVIC_EnableIRQ(GPIO_EVEN_IRQn); // Enabling the NVIC IRQ
+  NVIC_SetPriority(GPIO_ODD_IRQn, 8);
+  NVIC_EnableIRQ(GPIO_ODD_IRQn); // Enabling the NVIC IRQ
+}
 
 
 //Added for Assignment - 2
@@ -148,18 +173,110 @@ uint32_t letimerMilliseconds()
  *****************************************************************************/
 void I2C0_IRQHandler(void)
 {
-  I2C_TransferReturn_TypeDef trans_ret = I2C_Transfer(I2C0);
 
-  // Checking if the transfer is done or no.
-  if(trans_ret == i2cTransferDone)
-  {
-      createEventI2CTransfer();
-      NVIC_DisableIRQ(I2C0_IRQn);
-  }
-  else if ((trans_ret != i2cTransferDone) && (trans_ret != i2cTransferInProgress))
-  {
-      LOG_ERROR("I2C Error code: %d", trans_ret);
-//      state_machine_temp (event_Error);
-  }
+
+
+
+  flags = I2C_IntGetEnabled(I2C0);
+
+
+//  I2C_TransferReturn_TypeDef trans_ret = I2C_Transfer(I2C0);
+//
+//  // Checking if the transfer is done or no.
+//  if(trans_ret == i2cTransferDone)
+//  {
+//      NVIC_DisableIRQ(I2C0_IRQn);
+//      createEventI2CTransfer();
+//  }
+//  else if ((trans_ret != i2cTransferDone) && (trans_ret != i2cTransferInProgress))
+//  {
+//      LOG_ERROR("I2C Error code: %d\n", trans_ret);
+//      createEventErrorTemp();
+//  }
+//  I2C_IntClear(I2C0, flags);
+
 }
 
+void I2C_event(void)
+{
+
+  if(flags != 0)
+    {
+      I2C_TransferReturn_TypeDef trans_ret = I2C_Transfer(I2C0);
+
+    // Checking if the transfer is done or no.
+    if(trans_ret == i2cTransferDone)
+    {
+        NVIC_DisableIRQ(I2C0_IRQn);
+        createEventI2CTransfer();
+    }
+    else if ((trans_ret != i2cTransferDone) && (trans_ret != i2cTransferInProgress))
+    {
+        LOG_ERROR("I2C Error code: %d\n", trans_ret);
+        createEventErrorTemp();
+    }
+      I2C_IntClear(I2C0, flags);
+    }
+  flags = 0;
+}
+
+
+/**************************************************************************//**
+ * This function handles when the even numbered GPIO pin interrupts are
+ * triggered
+ *
+ * This code will run only when the event occurs and the interrupt flag is
+ * raised
+ *
+ * Once the event occurs and the interrupt is raised we will call a function
+ * to create a function to schedule and event in the scheduler
+ *
+ * @param:
+ *      no params
+ *
+ * @return:
+ *      no returns
+ *****************************************************************************/
+void GPIO_EVEN_IRQHandler(void)
+{
+  int32_t flags;
+
+  flags = GPIO_IntGetEnabled();
+
+  GPIO_IntClear(flags);
+
+  createEventPB0Pressed();
+
+//  gpioLed1Toggle(); // For Debugging purpose only
+}
+
+/**************************************************************************//**
+ * This function handles when the odd numbered GPIO pin interrupts are
+ * triggered
+ *
+ * This code will run only when the event occurs and the interrupt flag is
+ * raised
+ *
+ * Once the event occurs and the interrupt is raised we will call a function
+ * to create a function to schedule and event in the scheduler
+ *
+ * @param:
+ *      no params
+ *
+ * @return:
+ *      no returns
+ *****************************************************************************/
+void GPIO_ODD_IRQHandler(void)
+{
+  int32_t flags;
+
+  flags = GPIO_IntGetEnabled();
+
+  GPIO_IntClear(flags);
+
+  createEventMAX30101Int();
+
+//  createEventPB1Pressed();
+
+//  gpioLed1Toggle(); // For Debugging purpose only
+}

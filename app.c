@@ -46,6 +46,7 @@
 #include "src/irq.h"
 #include "src/scheduler.h"
 #include "src/i2c.h"
+#include "src/MAX_30101.h"
 
 /*****************************************************************************
  * GLOBAL variable declarations
@@ -115,13 +116,15 @@ SL_WEAK void app_init(void)
   // Initializing the Timer (LETIMER0) Interrupt
 //  LETIMER0_IRQInit();
 
-  // Initlializing the blue tooth events
+  // Initlializing the bluetooth events
   ble_Init();
 
-  // Initializing the
-  NVIC_ClearPendingIRQ(LETIMER0_IRQn); // We will clear all pending flags in the NVIC for LETIMER
-  NVIC_EnableIRQ(LETIMER0_IRQn); // Enabling the NVIC IRQ
+  // Initlializing the NVIC
+  NVIC_Init();
 
+//  MAX_30101_Init();
+//
+//  MAX_30101_ShutDown();
 }
 
 
@@ -179,8 +182,7 @@ SL_WEAK void app_process_action(void)
 //
 // // Assignment 4
 //  state_machine_temp(event);
-
-  LED_test_seq();
+  I2C_event();
 }
 
 
@@ -196,17 +198,28 @@ SL_WEAK void app_process_action(void)
   void sl_bt_on_event(sl_bt_msg_t *evt)
   {
 
-//    // Assignment 5
-//    // Passing the pointer to the sl_bt_msg_t data structure
-//    state_machine_ble(evt);
-//
-//    // Some events require responses from our application code,
-//    // and don’t necessarily advance our state machines.
-//    // For assignment 5 uncomment the next 2 function calls
-//    // handle_ble_event(evt); // put this code in ble.c/.h
-//
-//    // sequence through states driven by events
-//    // state_machine(evt);    // put this code in scheduler.c/.h
+    // Assignment 5
+    // Passing the pointer to the sl_bt_msg_t data structure
+   // ble_handler(evt);
+
+#if DEVICE_IS_BLE_SERVER
+
+//    state_machine_temp(evt);
+    state_machine_hr (evt);
+#else
+
+    state_machine_discovery(evt);
+
+#endif
+
+
+    // Some events require responses from our application code,
+    // and don’t necessarily advance our state machines.
+    // For assignment 5 uncomment the next 2 function calls
+    // handle_ble_event(evt); // put this code in ble.c/.h
+
+    // sequence through states driven by events
+    // state_machine(evt);    // put this code in scheduler.c/.h
 
 
 

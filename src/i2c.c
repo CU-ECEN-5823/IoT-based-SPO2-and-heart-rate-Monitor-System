@@ -148,6 +148,103 @@ uint16_t i2c_Read_blocking(uint8_t len)
  *
  * TransferReturn struct is used to initialize the transfer and also store the
  * status of the transfer.
+ *****************************************************************************/
+void i2c_Write_Read_blocking (uint8_t reg, uint8_t* read_data, size_t nbytes_read_data)
+{
+  transferSequence.flags = I2C_FLAG_WRITE_READ, // Write command
+  transferSequence.addr = (MAX_30101_ADDRESS<<1), // Slave address needs to be left shift by one bit
+  transferSequence.buf[0].data = &reg, // Passing the pointer that has the command data stored
+  transferSequence.buf[0].len = sizeof(reg); // Length of the command data
+  transferSequence.buf[1].data = read_data, // Passing the pointer that has the command data stored
+  transferSequence.buf[1].len = nbytes_read_data;
+
+  // This will initialize the write command on to the bus
+  I2C_TransferReturn_TypeDef trans_ret = I2CSPM_Transfer(I2C0,&transferSequence);
+
+  // Checking if the transfer is done or no.
+  if(trans_ret != i2cTransferDone)
+      {
+        LOG_ERROR("I2C Write error: %d", trans_ret); // If transfer is not done then we will log error message
+      }
+//  for (int i = 0; i < nbytes_read_data; i++)
+//    {
+//      printf("Reg 0x%02x :: Read %d:0x%02x\t", reg, i+1, *(read_data+i));
+//    }
+//  printf("\n\n");
+}
+
+
+void i2c_Write_Read (uint8_t reg, uint8_t* read_data, size_t nbytes_read_data)
+{
+  i2c_Init();
+
+  transferSequence.flags = I2C_FLAG_WRITE_READ, // Write command
+  transferSequence.addr = (MAX_30101_ADDRESS<<1), // Slave address needs to be left shift by one bit
+  transferSequence.buf[0].data = &reg, // Passing the pointer that has the command data stored
+  transferSequence.buf[0].len = sizeof(reg); // Length of the command data
+  transferSequence.buf[1].data = read_data, // Passing the pointer that has the command data stored
+  transferSequence.buf[1].len = nbytes_read_data;
+
+  NVIC_SetPriority(I2C0_IRQn, 2);
+
+  NVIC_EnableIRQ(I2C0_IRQn);
+
+  // This will initialize the write command on to the bus
+  I2C_TransferReturn_TypeDef transferStatus = I2C_TransferInit(I2C0, &transferSequence);
+
+  if ((transferStatus != i2cTransferDone) && (transferStatus != i2cTransferInProgress))
+  {
+      LOG_ERROR("I2C Write Error code: %d", transferStatus);
+//      state_machine_temp (event_Error);
+  }
+
+
+
+}
+
+/**************************************************************************//**
+ * This function sends a command to the bus with the address of the slave
+ * and also sends a command that needs to be performed by the slave
+ *
+ * TrasnferSequence struct is used to make the data in the apt format to send
+ * via bus
+ *
+ * TransferReturn struct is used to initialize the transfer and also store the
+ * status of the transfer.
+ *****************************************************************************/
+void i2c_Write_Write_blocking (uint8_t reg, uint8_t* write_data, size_t nbytes_write_data)
+{
+  transferSequence.flags = I2C_FLAG_WRITE_WRITE, // Write command
+  transferSequence.addr = (MAX_30101_ADDRESS<<1), // Slave address needs to be left shift by one bit
+  transferSequence.buf[0].data = &reg, // Passing the pointer that has the command data stored
+  transferSequence.buf[0].len = sizeof(reg); // Length of the command data
+  transferSequence.buf[1].data = write_data, // Passing the pointer that has the command data stored
+  transferSequence.buf[1].len = nbytes_write_data;
+
+  // This will initialize the write command on to the bus
+  I2C_TransferReturn_TypeDef trans_ret = I2CSPM_Transfer(I2C0,&transferSequence);
+
+  // Checking if the transfer is done or no.
+  if(trans_ret != i2cTransferDone)
+      {
+        LOG_ERROR("I2C Write error: %d", trans_ret); // If transfer is not done then we will log error message
+      }
+//  for (int i =0; i < nbytes_write_data; i++)
+//    {
+//      printf("Reg 0x%02x :: Write %d:0x%02x\t", reg, i+1, *(write_data+i));
+//    }
+//  printf("\n");
+}
+
+/**************************************************************************//**
+ * This function sends a command to the bus with the address of the slave
+ * and also sends a command that needs to be performed by the slave
+ *
+ * TrasnferSequence struct is used to make the data in the apt format to send
+ * via bus
+ *
+ * TransferReturn struct is used to initialize the transfer and also store the
+ * status of the transfer.
  *
  * This is interrupt driven function. The interrupt is taken care of at
  * I2C0_IRQHandler.
@@ -205,6 +302,8 @@ void i2c_Write()
  *****************************************************************************/
 void i2c_Read()
 {
+  i2c_Init();
+
   transferSequence.flags = I2C_FLAG_READ, // Read command
   transferSequence.addr = (Si7021_SLAVE_ADDRESS_TEMP<<1), // Slave address needs to be left shift by one bit
   transferSequence.buf[0].data = &received_data[0], // Passing the array that will store the incoming data
@@ -237,7 +336,10 @@ void i2c_Read()
  *****************************************************************************/
 uint16_t concatenatingBytes(uint8_t len)
 {
-  I2C_TransferReturn_TypeDef trans_ret = I2C_TransferInit(I2C0, &transferSequence);
+  // DOS: Yikes : you are starting another I2C transfer !!!!, No no no
+  //I2C_TransferReturn_TypeDef trans_ret = I2C_TransferInit(I2C0, &transferSequence);
+
+
   // If len == 1 then the single byte of data is stored as temperature
   if(len==1)
   {

@@ -10,10 +10,14 @@
 #include "em_letimer.h"
 
 // Function prototypes
-//void LETIMER0_IRQInit(); // Initializing the LETIMER0 IRQ routine
-void LETIMER0_IRQHandler(); // LETIMER0 IRQ handler
-uint32_t letimerMilliseconds(); // Gives the milliseconds since last boot
-void I2C0_IRQHandler(void); // I2C0 IRQ handler
+//void LETIMER0_IRQInit();                 // Initializing the LETIMER0 IRQ routine
+void LETIMER0_IRQHandler();                // LETIMER0 IRQ handler
+uint32_t letimerMilliseconds();            // Gives the milliseconds since last boot
+void I2C0_IRQHandler(void);                // I2C0 IRQ handler
+void GPIO_EVEN_IRQHandler(void);           // Even Pins GPIO handler
+void GPIO_ODD_IRQHandler(void);            // Odd Pins GPIO handler
+void NVIC_Init(void);                      // Initializes all the required NVICs
+void I2C_event(void);
 
 
 #endif /* SRC_IRQ_H_ */

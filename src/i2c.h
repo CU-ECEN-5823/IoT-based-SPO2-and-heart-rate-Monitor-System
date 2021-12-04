@@ -18,6 +18,8 @@
 // Address of the Si7021 temperature sensor (refer to data sheet)
 #define Si7021_SLAVE_ADDRESS_TEMP 0x40
 
+#define MAX_30101_ADDRESS 0x57 // Works fine
+
 
 // Function Definitions
 void i2c_Init(); // Function to initialize the I2C protocol
@@ -29,5 +31,10 @@ void i2c_Read(); // Function to read the data sent by the slave - Interrupt base
 float convertToDegrees (uint16_t val, char scale); // Function to convert the values into degrees
 float getTempReadingSi7021(char scale);
 uint16_t concatenatingBytes(uint8_t len); // Concatenates the bytes that were recieved from the I2C Read
+void i2c_Write_Read_blocking (uint8_t reg, uint8_t* read_data, size_t nbytes_read_data);
+void i2c_Write_Write_blocking (uint8_t reg, uint8_t* write_data, size_t nbytes_write_data);
+
+void i2c_Write_Read (uint8_t reg, uint8_t* read_data, size_t nbytes_read_data);
+
 
 #endif /* SRC_I2C_H_ */

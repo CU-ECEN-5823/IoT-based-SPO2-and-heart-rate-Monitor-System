@@ -243,6 +243,7 @@ void displayInit()
     //                     // for the LCD, on all the time now
 
 
+    sensorEnable();
 
     // Init the dot matrix display data structure
     display->dmdInitConfig = 0;
@@ -297,11 +298,17 @@ void displayInit()
     // Students: Figure out what parameters to pass in to sl_bt_system_set_soft_timer() to
     //           set up a 1 second repeating soft timer and uncomment the following lines
 
-	  //sl_status_t          timer_response;
-	  //timer_response = sl_bt_system_set_soft_timer();
-	  //if (timer_response != SL_STATUS_OK) {
-	  //    LOG_...
-    // }
+    // We set 32768 ticks for one second. For 1Hz of frequency we will need to switch ON and OFF in one second. So the interrupt required would be once every 1/2 sec to toggle
+
+	  sl_status_t          timer_response;
+	  timer_response = sl_bt_system_set_soft_timer ((32768/2), // 1 second is equal to 32768 ticks
+	                                                2, // handle = 2
+	                                                0 // repeating
+	                                                );;
+	  if (timer_response != SL_STATUS_OK)
+	   {
+	      LOG_ERROR("DMD_updateDisplay() returned non-zero error code=0x%04x", (unsigned int) status);
+     }
 
 
 
@@ -327,7 +334,7 @@ void displayUpdate()
 	//           the EXTCOMIN input to the LCD. Add that function to gpio.c./.h
 	//           Then uncomment the following line.
 	//
-	//gpioSetDisplayExtcomin(display->last_extcomin_state_high);
+	gpioSetDisplayExtcomin(display->last_extcomin_state_high);
 	
 } // displayUpdate()
 
