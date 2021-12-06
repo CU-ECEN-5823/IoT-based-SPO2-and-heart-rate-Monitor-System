@@ -10,6 +10,9 @@
 // Include logging for this file
 #define INCLUDE_LOG_DEBUG 1
 #include "src/log.h"
+#include<string.h>
+#include "algo.h"
+#include "autocorrelate.h"
 
 /**************************************************************************//**
  * GLOBAL variable declaration
@@ -21,10 +24,15 @@ uint8_t *write = cbfifo_array;
 uint8_t *read = cbfifo_array;
 uint8_t capacity_full = 0;
 
-#define MASTER_BUFFER (31*5)
+#define MASTER_BUFFER (31*10)
+#define FINGER_PRESS_BUFFER (3)
 
 uint32_t hr_buffer[MASTER_BUFFER];
 uint32_t *hr_buffer_ptr = hr_buffer;
+
+uint32_t finger_press[FINGER_PRESS_BUFFER];
+
+uint32_t calc_hr, heart_rate = 0, count = 0;
 
 /**************************************************************************//**
  * This is a state machine that is designed for measuring the temperature at
@@ -310,11 +318,9 @@ void state_machine_hr (sl_bt_msg_t *evt)
 
   ble_data_struct_t *ble_data_ptr = getBleDataPtr();
 
-  uint8_t htm_temperature_buffer[5]={0}, cb_buffer_load[11]={0};
-  uint8_t *p = &htm_temperature_buffer[1];
-  uint32_t htm_temperature_flt;
-
-  uint8_t read, write_ptr, read_ptr;
+  uint8_t hrm_heartrate_buffer[4]={0}, cb_buffer_load[11]={0};
+  uint8_t *p = &hrm_heartrate_buffer[1], finger_present, read, write_ptr, read_ptr;
+  uint32_t hrm_heartrate_flt;
 
   State_t_hr currentState;
   static State_t_hr nextState = state_Idle_hr;
@@ -339,9 +345,10 @@ void state_machine_hr (sl_bt_msg_t *evt)
       nextState = state_Idle_hr; // default
       if (event == event_measureMAX30101_hr) //When LETIMER_UF happens
       {
+//          sl_power_manager_add_em_requirement(SL_POWER_MANAGER_EM1);
           MAX_30101_Init();
 
-          printf("State 1 : Powered Up\n");
+//          printf("\nState 1 : Powered Up\n");
 
           nextState = state_Init_hr;
       }
@@ -358,11 +365,252 @@ void state_machine_hr (sl_bt_msg_t *evt)
 
       if (event == event_bufferFullMAX30101_hr) //When LETIMER_UF happens
       {
-          sl_power_manager_add_em_requirement(SL_POWER_MANAGER_EM1);
-          printf("State 2 : Buffer full clear it\n");
-          i2c_Write_Read(0xFF, &read, sizeof(read));
-          printf("%d", read);
-          nextState = state_BufferDrain_hr;
+//          printf("State 2 : Buffer full clear it\n");
+
+          i2c_Write_Read_blocking(0x06, &read_ptr, sizeof(read_ptr));
+
+          i2c_Write_Read_blocking(0x04, &write_ptr, sizeof(write_ptr));
+
+          int8_t data_to_read = (write_ptr-read_ptr);
+
+          if (data_to_read<0)
+            data_to_read = (32 + data_to_read);
+
+
+
+//          printf("\nInterrupt Hit. The difference is : %d\n", (data_to_read));
+
+          for (int i = 0; i<(data_to_read); i++)
+          {
+            uint8_t result[3]={0};
+
+            i2c_Write_Read_blocking(0x07, result, sizeof(result));
+
+            int32_t reading = ((uint32_t)result[0]<<16 | (uint32_t)result[1]<<8 | (uint32_t)result[2]);
+
+            *(hr_buffer_ptr) = reading;
+
+//            i2c_Write_Read_blocking(0x06, &read_ptr, sizeof(read_ptr));
+//            i2c_Write_Read_blocking(0x04, &write_ptr, sizeof(write_ptr));
+//
+//            printf("\nRd : %d\t Wr : %d\n", read_ptr, write_ptr);
+
+            hr_buffer_ptr++;
+          }
+//          i2c_Write_Read_blocking(0x06, &read_ptr, sizeof(read_ptr));
+//          i2c_Write_Read_blocking(0x04, &write_ptr, sizeof(write_ptr));
+//
+//          printf("\nRd : %d\t Wr : %d\n", read_ptr, write_ptr);
+
+          if ((hr_buffer_ptr - hr_buffer) == MASTER_BUFFER)
+          {
+            nextState = state_Idle_hr;
+
+            hr_buffer_ptr = hr_buffer;
+
+            calc_hr = (12000*2)/(autocorrelate_detect_period(hr_buffer, MASTER_BUFFER, kAC_32bps_unsigned));
+
+            if (calc_hr == 0 || (0 <= calc_hr && calc_hr<=120))
+              {
+                heart_rate = calc_hr;
+              }
+
+            finger_press[(count%FINGER_PRESS_BUFFER)] = calc_hr;
+
+            for (int i = 0; i < FINGER_PRESS_BUFFER; i++)
+            {
+              if (finger_press[i] == 0 || (0 <= finger_press[i] && finger_press[i]<=120))
+                {
+                  finger_present = 1;
+                  break;
+                }
+              else if (i == (FINGER_PRESS_BUFFER-1))
+                finger_present = 0;
+            }
+
+            if (!finger_present)
+            {
+              heart_rate = 0;
+            }
+
+            count++;
+
+//            printf ("\nCalc_hr: %d, Heart Rate:  %d, Period: %d, finger_present: %d ", calc_hr, heart_rate, heart_rate, finger_present);
+
+            LOG_INFO ("Heart Rate:  %d", heart_rate);
+
+
+            hrm_heartrate_flt = UINT32_TO_FLOAT((float)heart_rate*1000, -3);
+
+            UINT32_TO_BITSTREAM(p, heart_rate);
+
+            if (heart_rate == 0)
+            {
+                ble_data_ptr->heart_rate_status_led_value = condition_NotUsed;
+            }
+            else if ((0 < heart_rate) && (heart_rate <= 60))
+            {
+                ble_data_ptr->heart_rate_status_led_value = condition_Bradycardia;
+            }
+            else if ((60 < heart_rate) && (heart_rate <= 100))
+            {
+                ble_data_ptr->heart_rate_status_led_value = condition_Normal;
+            }
+            else if (100 <= heart_rate)
+            {
+                ble_data_ptr->heart_rate_status_led_value = condition_Tachycardia;
+            }
+
+
+            // Writing the default button state
+             sc = sl_bt_gatt_server_write_attribute_value(gattdb_heart_rate_led,
+                                                          0,
+                                                          1,
+                                                          &(ble_data_ptr->heart_rate_status_led_value));
+
+             // Printing the error message if the Server Write Failed fails
+             if (sc != 0)
+               LOG_ERROR("!!! Server Write Failed !!!\nError Code: 0x%x",sc);
+
+
+  //          displayPrintf(DISPLAY_ROW_TEMPVALUE, "");
+
+            if (ble_data_ptr->flag_conection == true &&
+                ble_data_ptr->flag_indication_button_state == true &&
+                ble_data_ptr->flag_bonded == true &&
+                ble_data_ptr->flag_indication_in_progress == true &&
+                cbfifo_length() == cbfifo_capacity())
+             {
+               LOG_ERROR("Buffer Full!! This indication will not be stored and will be lost.");
+             }
+            // If indications are in flight then we will execute the below
+            else if ((ble_data_ptr->flag_indication_temp == true) &&
+                (ble_data_ptr->flag_conection == true) &&
+                (ble_data_ptr->flag_indication_in_progress == false) &&
+                cbfifo_length() != cbfifo_capacity())
+            {
+
+                if (heart_rate)
+                {
+                  displayPrintf(DISPLAY_ROW_TEMPVALUE, " Heart Rate : %d bps", (int)heart_rate);
+                }
+                else
+                {
+                  displayPrintf(DISPLAY_ROW_TEMPVALUE, " Not Pressed ");
+                }
+                // Sending indication
+                sc = sl_bt_gatt_server_send_indication(ble_data_ptr->connectionHandle,
+                                                       gattdb_heart_rate_measurement,
+                                                       sizeof(hrm_heartrate_buffer),
+                                                       hrm_heartrate_buffer);
+  //              LOG_INFO("Indication Sent");
+                ble_data_ptr->flag_indication_in_progress = true;
+
+                // Printing the error message if the Sending Indication fails
+                if (sc != 0)
+                  LOG_ERROR("!!! Sending Indication Failed !!!\nError Code: 0x%x",sc);
+
+                // Writing the measurement type
+                sc = sl_bt_gatt_server_write_attribute_value(gattdb_temperature_type,
+                                                             0,
+                                                             sizeof(hrm_heartrate_buffer[0]),
+                                                             p);
+
+                // Printing the error message if the Server Write Failed fails
+                if (sc != 0)
+                  LOG_ERROR("!!! Server Write Failed !!!\nError Code: 0x%x",sc);
+
+                displayPrintf(DISPLAY_ROW_TEMPVALUE, "%d bpm", (int)heart_rate);
+            }
+//            else if ((ble_data_ptr->flag_indication_temp == true) &&
+//                     (ble_data_ptr->flag_conection == true) &&
+//                     (ble_data_ptr->flag_indication_in_progress == true))
+//            {
+//  //              printf("%x\n%x\n%x\n",gattdb_temperature_type, sizeof(htm_temperature_buffer), htm_temperature_buffer[1]);
+//                cb_buffer_load[0] = (uint8_t) ((gattdb_temperature_type >> 8) & 0x00FF);
+//                cb_buffer_load[1] = (uint8_t) ((gattdb_temperature_type >> 0) & 0x00FF);
+//                cb_buffer_load[2] = (uint8_t) ((sizeof(htm_temperature_buffer) >> 24) & 0x000000FF);
+//                cb_buffer_load[3] = (uint8_t) ((sizeof(htm_temperature_buffer) >> 16) & 0x000000FF);
+//                cb_buffer_load[4] = (uint8_t) ((sizeof(htm_temperature_buffer) >> 8) & 0x000000FF);
+//                cb_buffer_load[5] = (uint8_t) ((sizeof(htm_temperature_buffer) >> 0) & 0x000000FF);
+//                cb_buffer_load[6] = htm_temperature_buffer[0];
+//                cb_buffer_load[7] = htm_temperature_buffer[1];
+//                cb_buffer_load[8] = htm_temperature_buffer[2];
+//                cb_buffer_load[9] = htm_temperature_buffer[3];
+//                cb_buffer_load[10] = htm_temperature_buffer[4];
+//
+//  //              // For debugging purpose only
+//  //              printf("\nOriginal\n%d\t%d\t%d\t%d\t%d\n%d\n%d\n\n", cb_buffer_load[6],
+//  //                     cb_buffer_load[7],
+//  //                     cb_buffer_load[8],
+//  //                     cb_buffer_load[9],
+//  //                     cb_buffer_load[10],
+//  //                     sizeof(htm_temperature_buffer),
+//  //                     gattdb_temperature_type);
+//  //
+//  //              printf("%d", (sizeof(cb_buffer_load)/sizeof(uint8_t))); // For debugging purpose only
+//                cbfifo_enqueue(cb_buffer_load, (sizeof(cb_buffer_load)/sizeof(uint8_t)));
+//
+//                LOG_INFO("Temperature indication added to buffer : %d indications left in the buffer", (cbfifo_length()/11));
+//            }
+
+
+//            if (ble_data_ptr->flag_conection == true &&
+//                ble_data_ptr->flag_indication_button_state == true &&
+//                ble_data_ptr->flag_bonded == true &&
+//                ble_data_ptr->flag_indication_in_progress == true &&
+//                cbfifo_length() == cbfifo_capacity())
+//             {
+//               LOG_ERROR("Buffer Full!! This indication will not be stored and will be lost.");
+//             }
+//            // If indications are in flight then we will execute the below
+//            else if ((ble_data_ptr->flag_indication_temp == true) &&
+//                (ble_data_ptr->flag_conection == true) &&
+//                (ble_data_ptr->flag_indication_in_progress == false) &&
+//                cbfifo_length() != cbfifo_capacity())
+//            {
+//
+//                if (heart_rate)
+//                {
+//                  displayPrintf(DISPLAY_ROW_TEMPVALUE, " Heart Rate : %d bps", (int)heart_rate);
+//                }
+//                else
+//                {
+//                  displayPrintf(DISPLAY_ROW_TEMPVALUE, " Not Pressed ");
+//                }
+//                // Sending indication
+//                sc = sl_bt_gatt_server_send_indication(ble_data_ptr->connectionHandle,
+//                                                       gattdb_heart_rate_measurement,
+//                                                       sizeof(hrm_heartrate_buffer),
+//                                                       hrm_heartrate_buffer);
+//  //              LOG_INFO("Indication Sent");
+//                ble_data_ptr->flag_indication_in_progress = true;
+//
+//                // Printing the error message if the Sending Indication fails
+//                if (sc != 0)
+//                  LOG_ERROR("!!! Sending Indication Failed !!!\nError Code: 0x%x",sc);
+//
+//                // Writing the measurement type
+//                sc = sl_bt_gatt_server_write_attribute_value(gattdb_temperature_type,
+//                                                             0,
+//                                                             sizeof(hrm_heartrate_buffer[0]),
+//                                                             p);
+//
+//                // Printing the error message if the Server Write Failed fails
+//                if (sc != 0)
+//                  LOG_ERROR("!!! Server Write Failed !!!\nError Code: 0x%x",sc);
+//
+//                displayPrintf(DISPLAY_ROW_TEMPVALUE, "%d bpm", (int)heart_rate);
+
+
+            memset(hr_buffer, 0, (MASTER_BUFFER*sizeof(uint32_t)));
+
+            MAX_30101_ShutDown();
+          }
+          else
+          {
+            nextState = state_Init_hr;
+          }
       }
       if (event == event_Error_temp)
       {
@@ -374,10 +622,10 @@ void state_machine_hr (sl_bt_msg_t *evt)
 
     /****************************State 3****************************/
     case state_BufferDrain_hr:
-      nextState = state_BufferDrain_hr; // default
+      nextState = event_measureMAX30101_hr; // default
       if (event == event_I2CTransfer_IRQ_hr) //When LETIMER_UF happens
       {
-          printf("State 3 : I2C Transfer Complete\n");
+          printf("\nState 3 : I2C Transfer Complete\n");
 
           nextState = state_lastOne;
       }
@@ -394,7 +642,7 @@ void state_machine_hr (sl_bt_msg_t *evt)
       nextState = state_lastOne; // default
       if (event == event_measureMAX30101_hr) //When LETIMER_UF happens
       {
-          sl_power_manager_remove_em_requirement(SL_POWER_MANAGER_EM1);
+//          sl_power_manager_remove_em_requirement(SL_POWER_MANAGER_EM1);
           MAX_30101_ShutDown();
 
           printf("State 4 : Shut Down\n");

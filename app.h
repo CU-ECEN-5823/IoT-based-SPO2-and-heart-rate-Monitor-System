@@ -56,15 +56,14 @@
 #include "src/ble.h"
 
 // Assignment 2
-//#define LOWEST_ENERGY_MODE (2)
 #define LOWEST_ENERGY_MODE (2)
 #define LETIMER_ON_TIME_MS (175)
-#define LETIMER_PERIOD_MS (5000) // Will be loaded into TIMER0 COMP0 register
+#define LETIMER_PERIOD_MS (2000) // Will be loaded into TIMER0 COMP0 register
 
 
 // Assignment 5
 // This code will set to 1 only if temperature state machine is required to run if we have an active connection and the indication are ON
-#define NOP_INDICATION_CONNECTION (0)
+#define NOP_INDICATION_CONNECTION (1)
 
 
 // See: https://docs.silabs.com/gecko-platform/latest/service/power_manager/overview

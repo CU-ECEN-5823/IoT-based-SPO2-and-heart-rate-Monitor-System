@@ -18,7 +18,6 @@
 #include "src/log.h"
 
 uint8_t cycles=0;
-int32_t flags;
 
 //Added for Assignment - 2
 /**************************************************************************//**
@@ -175,49 +174,26 @@ void I2C0_IRQHandler(void)
 {
 
 
-
+  int32_t flags;
 
   flags = I2C_IntGetEnabled(I2C0);
 
 
-//  I2C_TransferReturn_TypeDef trans_ret = I2C_Transfer(I2C0);
-//
-//  // Checking if the transfer is done or no.
-//  if(trans_ret == i2cTransferDone)
-//  {
-//      NVIC_DisableIRQ(I2C0_IRQn);
-//      createEventI2CTransfer();
-//  }
-//  else if ((trans_ret != i2cTransferDone) && (trans_ret != i2cTransferInProgress))
-//  {
-//      LOG_ERROR("I2C Error code: %d\n", trans_ret);
-//      createEventErrorTemp();
-//  }
-//  I2C_IntClear(I2C0, flags);
+  I2C_TransferReturn_TypeDef trans_ret = I2C_Transfer(I2C0);
 
-}
+  // Checking if the transfer is done or no.
+  if(trans_ret == i2cTransferDone)
+  {
+      NVIC_DisableIRQ(I2C0_IRQn);
+      createEventI2CTransfer();
+  }
+  else if ((trans_ret != i2cTransferDone) && (trans_ret != i2cTransferInProgress))
+  {
+      LOG_ERROR("I2C Error code: %d\n", trans_ret);
+      createEventErrorTemp();
+  }
+  I2C_IntClear(I2C0, flags);
 
-void I2C_event(void)
-{
-
-  if(flags != 0)
-    {
-      I2C_TransferReturn_TypeDef trans_ret = I2C_Transfer(I2C0);
-
-    // Checking if the transfer is done or no.
-    if(trans_ret == i2cTransferDone)
-    {
-        NVIC_DisableIRQ(I2C0_IRQn);
-        createEventI2CTransfer();
-    }
-    else if ((trans_ret != i2cTransferDone) && (trans_ret != i2cTransferInProgress))
-    {
-        LOG_ERROR("I2C Error code: %d\n", trans_ret);
-        createEventErrorTemp();
-    }
-      I2C_IntClear(I2C0, flags);
-    }
-  flags = 0;
 }
 
 

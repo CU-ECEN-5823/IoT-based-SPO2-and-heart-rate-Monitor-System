@@ -28,11 +28,14 @@ void MAX_30101_Init()
   i2c_Write_Write_blocking(0x09, &write, sizeof(write));
   timerWaitUs_blocking(5000);
 
-  write = 0x07;
+//  write = 0x0F;
+//  write = 0xFF;// Much better
+
+  write = 0x4F;// Much better
   i2c_Write_Write_blocking(0x0C, &write, sizeof(write));
   timerWaitUs_blocking(5000);
 
-  write = 0x11;
+  write = 0x11;// Working
   i2c_Write_Write_blocking(0x11, &write, sizeof(write));
   timerWaitUs_blocking(5000);
 
@@ -41,7 +44,8 @@ void MAX_30101_Init()
   i2c_Write_Write_blocking(0x02, &write, sizeof(write));
   timerWaitUs_blocking(5000);
 
-  write = 0x0F;
+//  write = 0x0F;// Working
+  write = 0x1F;
   i2c_Write_Write_blocking(0x0A, &write, sizeof(write));
   timerWaitUs_blocking(5000);
 
@@ -84,6 +88,15 @@ void MAX_30101_PowerUp()
 //  i2c_Write_Write_blocking(0x09, &write, sizeof(write));
 //  timerWaitUs_blocking(5000);
 }
+
+
+void MAX_30101_Reset()
+{
+  uint8_t write = 0xC2; // Reset
+  i2c_Write_Write_blocking(0x09, &write, sizeof(write));
+  timerWaitUs_blocking(5000);
+}
+
 
 
 

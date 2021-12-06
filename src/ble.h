@@ -51,6 +51,8 @@ typedef struct {
 
   uint8_t button_state_value;
 
+  uint8_t heart_rate_status_led_value;
+
   // For the client implementation
   uint16_t myCharacteristicHandle_temp;
   uint32_t myServiceHandle_temp;
@@ -60,6 +62,14 @@ typedef struct {
   uint32_t myServiceHandle_button_state;
 
 } ble_data_struct_t;
+
+typedef enum {
+  condition_Idle,
+  condition_NotUsed,
+  condition_Bradycardia,
+  condition_Normal,
+  condition_Tachycardia,
+} heart_condition_t;
 
 // Structure to define the UUID data structure
 typedef struct {

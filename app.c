@@ -182,7 +182,6 @@ SL_WEAK void app_process_action(void)
 //
 // // Assignment 4
 //  state_machine_temp(event);
-  I2C_event();
 }
 
 
@@ -200,7 +199,7 @@ SL_WEAK void app_process_action(void)
 
     // Assignment 5
     // Passing the pointer to the sl_bt_msg_t data structure
-   // ble_handler(evt);
+    ble_handler(evt);
 
 #if DEVICE_IS_BLE_SERVER
 

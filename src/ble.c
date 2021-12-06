@@ -271,7 +271,7 @@ void ble_handler(sl_bt_msg_t *evt) {
 
               // This code will be run only if the temperature state machine is required to run if we have an active connection and the indication are ON
         #if NOP_INDICATION_CONNECTION == 1
-              if ((ble_data_ptr->flag_conection == true) && (ble_data_ptr->flag_indication_temp == true))
+              if ((ble_data_ptr->flag_conection == true) && (ble_data_ptr->flag_indication_temp == true) && (ble_data_ptr->flag_bonded == true))
               {
                   LETIMER_IntEnable(LETIMER0, LETIMER_IEN_UF);
         //          LOG_INFO("Enabled"); // For debugging purpose
@@ -369,6 +369,9 @@ void ble_handler(sl_bt_msg_t *evt) {
               displayPrintf(DISPLAY_ROW_TEMPVALUE, "");
               gpioLed0SetOff();
               gpioLed1SetOff();
+
+              MAX_30101_Reset();
+              MAX_30101_ShutDown();
 
 
         #else
@@ -545,7 +548,7 @@ void ble_handler(sl_bt_msg_t *evt) {
           ble_data_ptr->button_0_flag = !ble_data_ptr->button_0_flag;
 
           // If not bonded then we will use PB0 for confirmation of passkey
-          if (ble_data_ptr->flag_bonded == false) // Trigger on the falling edge of the interrupt
+          if (ble_data_ptr->flag_bonded == false && ble_data_ptr->button_0_flag == true) // Trigger on the falling edge of the interrupt
           {
               // Confirming Passkey
               sc = sl_bt_sm_passkey_confirm(ble_data_ptr->connectionHandle, 1);
@@ -749,7 +752,7 @@ void ble_handler(sl_bt_msg_t *evt) {
     //      LOG_INFO("Changes Noticed"); // For debugging purpose only
 
           // Temperature handling for indication enable and in flight
-          if ((evt->data.evt_gatt_server_characteristic_status.characteristic) == gattdb_temperature_measurement && \
+          if ((evt->data.evt_gatt_server_characteristic_status.characteristic) == gattdb_heart_rate_measurement && \
               (evt->data.evt_gatt_server_characteristic_status.status_flags) == 0x01) // 1 if Characteristic client configuration has been changed.
           {
     //        ble_data.connectionHandle = evt->data.evt_gatt_server_characteristic_status.characteristic;
@@ -773,7 +776,7 @@ void ble_handler(sl_bt_msg_t *evt) {
 
             }
           }
-          else if ((evt->data.evt_gatt_server_characteristic_status.characteristic) == gattdb_temperature_measurement && \
+          else if ((evt->data.evt_gatt_server_characteristic_status.characteristic) == gattdb_heart_rate_measurement && \
               (evt->data.evt_gatt_server_characteristic_status.status_flags) == 0x02) // 2 if Characteristic confirmation has been received
           {
               ble_data_ptr->flag_indication_in_progress = false; // This is a flag that will be set when the indication is acknowledged by the server.
@@ -808,12 +811,12 @@ void ble_handler(sl_bt_msg_t *evt) {
 
           // This code will be run only if the temperature state machine is required to run if we have an active connection and the indication are ON. Set NOP_INDICATION_CONNECTION in app.h
         #if NOP_INDICATION_CONNECTION == 1
-              if ((ble_data_ptr->flag_conection == true) && (ble_data_ptr->flag_indication_temp == true))
+              if ((ble_data_ptr->flag_conection == true) && (ble_data_ptr->flag_indication_temp == true) && (ble_data_ptr->flag_bonded == true))
               {
                 LETIMER_IntEnable(LETIMER0, LETIMER_IEN_UF);
         //        LOG_INFO("Enable"); // For debugging purpose
               }
-              else if ((ble_data_ptr->flag_conection == false) || (ble_data_ptr->flag_indication_temp == false))
+              else if ((ble_data_ptr->flag_conection == false) || (ble_data_ptr->flag_indication_temp == false) || (ble_data_ptr->flag_bonded == false))
               {
                 LETIMER_IntDisable(LETIMER0, LETIMER_IEN_UF);
         //        LOG_INFO("Disable"); // For debugging purpose
