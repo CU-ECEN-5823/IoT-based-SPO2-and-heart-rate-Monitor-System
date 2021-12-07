@@ -280,7 +280,7 @@ void ble_handler(sl_bt_msg_t *evt) {
 
               /**Setting up the timer to poll for the circular buffer**/
               // We will poll every second
-              sc = sl_bt_system_set_soft_timer ((32768),   // 1 second is equal to 32768 ticks
+              sc = sl_bt_system_set_soft_timer ((32768*2),   // 1 second is equal to 32768 ticks
                                                  3,           // handle = 3
                                                  0);;         // repeating
 
@@ -373,6 +373,7 @@ void ble_handler(sl_bt_msg_t *evt) {
               MAX_30101_Reset();
               MAX_30101_ShutDown();
 
+              createEventSystemError();
 
         #else
         /*------------------------------Client Events------------------------------*/
@@ -477,14 +478,14 @@ void ble_handler(sl_bt_msg_t *evt) {
               unload_buffer_seq_unwrap.buffer[4] = cb_buffer_unload[10];
 
               // Checking for the type of character handle and then acting accordingly
-              if (unload_buffer_seq_unwrap.charHandle == gattdb_button_state)
+              if (unload_buffer_seq_unwrap.charHandle == gattdb_heart_rate_led)
               {
 //                  printf("Button Sending indications"); // For debugging purpose
                   // Sending indication // For debugging purpose
                   sc = sl_bt_gatt_server_send_indication(ble_data_ptr->connectionHandle,
-                                                         unload_buffer_seq_unwrap.charHandle,
+                                                         gattdb_heart_rate_led,
                                                          1,
-                                                         &(unload_buffer_seq_unwrap.buffer));
+                                                         unload_buffer_seq_unwrap.buffer);
         //              LOG_INFO("Indication Sent");
                   ble_data_ptr->flag_indication_in_progress = true;
 
@@ -493,19 +494,19 @@ void ble_handler(sl_bt_msg_t *evt) {
                       LOG_ERROR("!!! Buffer Sending Indication Failed !!!\nError Code: 0x%x",sc);
 
                   // Writing attribute value to the GATT server
-                  sc = sl_bt_gatt_server_write_attribute_value(unload_buffer_seq_unwrap.charHandle,
+                  sc = sl_bt_gatt_server_write_attribute_value(gattdb_heart_rate_led,
                                                                0,
                                                                1,
-                                                               &(unload_buffer_seq_unwrap.buffer));
+                                                               unload_buffer_seq_unwrap.buffer);
 
                   // Printing the error message if the Server Write Failed fails
                   if (sc != 0)
                     LOG_ERROR("!!! Server Write Failed !!!\nError Code: 0x%x",sc);
 
-                  LOG_INFO("Button indication sent from buffer : %d indications left in the buffer", (cbfifo_length()/11));
+                  LOG_INFO("LED Indications sent from buffer : %d indications left in the buffer", (cbfifo_length()/11));
 
               }
-              else if (unload_buffer_seq_unwrap.charHandle == gattdb_temperature_type)
+              else if (unload_buffer_seq_unwrap.charHandle == gattdb_heart_rate_measurement)
               {
 //                  // For debugging purpose only
 //                  printf("Temperature Sending indications");
@@ -520,7 +521,7 @@ void ble_handler(sl_bt_msg_t *evt) {
 
                   // Sending indication
                   sc = sl_bt_gatt_server_send_indication(ble_data_ptr->connectionHandle,
-                                                         gattdb_temperature_measurement,
+                                                         gattdb_heart_rate_measurement,
                                                          unload_buffer_seq_unwrap.bufferLen,
                                                          unload_buffer_seq_unwrap.buffer);
 
@@ -543,7 +544,7 @@ void ble_handler(sl_bt_msg_t *evt) {
 
 
       // Checking which external event occurred
-      if (evt->data.evt_system_external_signal.extsignals == event_PB0Pressed_temp)
+      if (evt->data.evt_system_external_signal.extsignals == event_PB0Pressed_hr)
       {
           ble_data_ptr->button_0_flag = !ble_data_ptr->button_0_flag;
 
@@ -656,7 +657,7 @@ void ble_handler(sl_bt_msg_t *evt) {
           #endif
       }
       // Event for the PB1 button
-      else if (evt->data.evt_system_external_signal.extsignals == event_PB1Pressed_temp)
+      else if (evt->data.evt_system_external_signal.extsignals == event_PB1Pressed_hr)
         {
           ble_data_ptr->button_1_flag = !ble_data_ptr->button_1_flag;
       #if DEVICE_IS_BLE_SERVER
@@ -700,7 +701,7 @@ void ble_handler(sl_bt_msg_t *evt) {
       if (evt->data.evt_gatt_procedure_completed.result == 0x110F)
       {
 
-          printf("Error code is : %x",evt->data.evt_gatt_procedure_completed.result);
+//          printf("Error code is : %x",evt->data.evt_gatt_procedure_completed.result);
           // Writing the default button state
           sc = sl_bt_sm_increase_security(ble_data_ptr->connectionHandle);
 
@@ -719,6 +720,26 @@ void ble_handler(sl_bt_msg_t *evt) {
       displayPrintf(DISPLAY_ROW_ACTION, "");
 
       ble_data_ptr->flag_bonded = true;
+
+      LOG_INFO("- - - Bonding Successful - - -");
+
+#if DEVICE_IS_BLE_SERVER
+      /*------------------------------Server Events------------------------------*/
+      #if NOP_INDICATION_CONNECTION == 1
+            if ((ble_data_ptr->flag_conection == true) && (ble_data_ptr->flag_indication_temp == true) && (ble_data_ptr->flag_bonded == true))
+            {
+              LETIMER_IntEnable(LETIMER0, LETIMER_IEN_UF);
+      //        LOG_INFO("Enable"); // For debugging purpose
+            }
+            else if ((ble_data_ptr->flag_conection == false) || (ble_data_ptr->flag_indication_temp == false) || (ble_data_ptr->flag_bonded == false))
+            {
+              LETIMER_IntDisable(LETIMER0, LETIMER_IEN_UF);
+      //        LOG_INFO("Disable"); // For debugging purpose
+            }
+      #endif
+      #else
+      /*------------------------------Client Events------------------------------*/
+#endif
 
     break;
 
@@ -783,7 +804,7 @@ void ble_handler(sl_bt_msg_t *evt) {
           }
 
           // Button State handling for indication enable and in flight
-          if ((evt->data.evt_gatt_server_characteristic_status.characteristic) == gattdb_button_state && \
+          if ((evt->data.evt_gatt_server_characteristic_status.characteristic) == gattdb_heart_rate_led && \
               (evt->data.evt_gatt_server_characteristic_status.status_flags) == 0x01) // 1 if Characteristic client configuration has been changed.
           {
     //        ble_data.connectionHandle = evt->data.evt_gatt_server_characteristic_status.characteristic;
@@ -802,10 +823,11 @@ void ble_handler(sl_bt_msg_t *evt) {
                 displayPrintf(DISPLAY_ROW_9, "Button Released");
             }
           }
-          else if ((evt->data.evt_gatt_server_characteristic_status.characteristic) == gattdb_button_state && \
+          else if ((evt->data.evt_gatt_server_characteristic_status.characteristic) == gattdb_heart_rate_led && \
               (evt->data.evt_gatt_server_characteristic_status.status_flags) == 0x02) // 2 if Characteristic confirmation has been received
           {
               ble_data_ptr->flag_indication_in_progress = false; // This is a flag that will be set when the indication is acknowledged by the server.
+              LOG_INFO("Indication Complete");
           }
 
 

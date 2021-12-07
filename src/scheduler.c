@@ -318,7 +318,7 @@ void state_machine_hr (sl_bt_msg_t *evt)
 
   ble_data_struct_t *ble_data_ptr = getBleDataPtr();
 
-  uint8_t hrm_heartrate_buffer[4]={0}, cb_buffer_load[11]={0};
+  uint8_t hrm_heartrate_buffer[5]={0}, cb_buffer_load[11]={0};
   uint8_t *p = &hrm_heartrate_buffer[1], finger_present, read, write_ptr, read_ptr;
   uint32_t hrm_heartrate_flt;
 
@@ -352,9 +352,8 @@ void state_machine_hr (sl_bt_msg_t *evt)
 
           nextState = state_Init_hr;
       }
-      if (event == event_Error_temp)
+      if (event == event_SystemError_hr)
       {
-          sl_bt_system_reset(sl_bt_system_boot_mode_normal);
           nextState = state_Idle_hr;
       }
     break;
@@ -400,12 +399,10 @@ void state_machine_hr (sl_bt_msg_t *evt)
 //          i2c_Write_Read_blocking(0x06, &read_ptr, sizeof(read_ptr));
 //          i2c_Write_Read_blocking(0x04, &write_ptr, sizeof(write_ptr));
 //
-//          printf("\nRd : %d\t Wr : %d\n", read_ptr, write_ptr);
+//          printf("\nRd : %d\t Wr : %d\t Diff : %d\n", read_ptr, write_ptr, (hr_buffer_ptr - hr_buffer));
 
           if ((hr_buffer_ptr - hr_buffer) == MASTER_BUFFER)
           {
-            nextState = state_Idle_hr;
-
             hr_buffer_ptr = hr_buffer;
 
             calc_hr = (12000*2)/(autocorrelate_detect_period(hr_buffer, MASTER_BUFFER, kAC_32bps_unsigned));
@@ -461,22 +458,10 @@ void state_machine_hr (sl_bt_msg_t *evt)
                 ble_data_ptr->heart_rate_status_led_value = condition_Tachycardia;
             }
 
-
-            // Writing the default button state
-             sc = sl_bt_gatt_server_write_attribute_value(gattdb_heart_rate_led,
-                                                          0,
-                                                          1,
-                                                          &(ble_data_ptr->heart_rate_status_led_value));
-
-             // Printing the error message if the Server Write Failed fails
-             if (sc != 0)
-               LOG_ERROR("!!! Server Write Failed !!!\nError Code: 0x%x",sc);
-
-
   //          displayPrintf(DISPLAY_ROW_TEMPVALUE, "");
 
             if (ble_data_ptr->flag_conection == true &&
-                ble_data_ptr->flag_indication_button_state == true &&
+                ble_data_ptr->flag_indication_temp == true &&
                 ble_data_ptr->flag_bonded == true &&
                 ble_data_ptr->flag_indication_in_progress == true &&
                 cbfifo_length() == cbfifo_capacity())
@@ -510,148 +495,117 @@ void state_machine_hr (sl_bt_msg_t *evt)
                 if (sc != 0)
                   LOG_ERROR("!!! Sending Indication Failed !!!\nError Code: 0x%x",sc);
 
-                // Writing the measurement type
-                sc = sl_bt_gatt_server_write_attribute_value(gattdb_temperature_type,
-                                                             0,
-                                                             sizeof(hrm_heartrate_buffer[0]),
-                                                             p);
+                displayPrintf(DISPLAY_ROW_TEMPVALUE, "%d bpm", (int)heart_rate);
+            }
+            else if ((ble_data_ptr->flag_indication_temp == true) &&
+                     (ble_data_ptr->flag_conection == true) &&
+                     (ble_data_ptr->flag_indication_in_progress == true))
+            {
+  //              printf("%x\n%x\n%x\n",gattdb_temperature_type, sizeof(htm_temperature_buffer), htm_temperature_buffer[1]);
+                cb_buffer_load[0] = (uint8_t) ((gattdb_heart_rate_measurement >> 8) & 0x00FF);
+                cb_buffer_load[1] = (uint8_t) ((gattdb_heart_rate_measurement >> 0) & 0x00FF);
+                cb_buffer_load[2] = (uint8_t) ((sizeof(hrm_heartrate_buffer) >> 24) & 0x000000FF);
+                cb_buffer_load[3] = (uint8_t) ((sizeof(hrm_heartrate_buffer) >> 16) & 0x000000FF);
+                cb_buffer_load[4] = (uint8_t) ((sizeof(hrm_heartrate_buffer) >> 8) & 0x000000FF);
+                cb_buffer_load[5] = (uint8_t) ((sizeof(hrm_heartrate_buffer) >> 0) & 0x000000FF);
+                cb_buffer_load[6] = hrm_heartrate_buffer[0];
+                cb_buffer_load[7] = hrm_heartrate_buffer[1];
+                cb_buffer_load[8] = hrm_heartrate_buffer[2];
+                cb_buffer_load[9] = hrm_heartrate_buffer[3];
+                cb_buffer_load[10] = hrm_heartrate_buffer[4];
 
-                // Printing the error message if the Server Write Failed fails
+  //              // For debugging purpose only
+  //              printf("\nOriginal\n%d\t%d\t%d\t%d\t%d\n%d\n%d\n\n", cb_buffer_load[6],
+  //                     cb_buffer_load[7],
+  //                     cb_buffer_load[8],
+  //                     cb_buffer_load[9],
+  //                     cb_buffer_load[10],
+  //                     sizeof(htm_temperature_buffer),
+  //                     gattdb_temperature_type);
+  //
+  //              printf("%d", (sizeof(cb_buffer_load)/sizeof(uint8_t))); // For debugging purpose only
+                cbfifo_enqueue(cb_buffer_load, (sizeof(cb_buffer_load)/sizeof(uint8_t)));
+
+                LOG_INFO("Heart Rate indication added to buffer : %d indications left in the buffer", (cbfifo_length()/11));
+            }
+
+
+
+
+
+            if (ble_data_ptr->flag_conection == true &&
+                ble_data_ptr->flag_indication_button_state == true &&
+                ble_data_ptr->flag_bonded == true &&
+                ble_data_ptr->flag_indication_in_progress == true &&
+                cbfifo_length() == cbfifo_capacity())
+             {
+               LOG_ERROR("Buffer Full!! This indication will not be stored and will be lost.");
+             }
+            // If indications are in flight then we will execute the below
+            else if ((ble_data_ptr->flag_indication_button_state == true) &&
+                (ble_data_ptr->flag_conection == true) &&
+                (ble_data_ptr->flag_indication_in_progress == false) &&
+                cbfifo_length() != cbfifo_capacity())
+            {
+                // Sending indication
+                sc = sl_bt_gatt_server_send_indication(ble_data_ptr->connectionHandle,
+                                                       gattdb_heart_rate_led,
+                                                       sizeof(ble_data_ptr->heart_rate_status_led_value),
+                                                       &(ble_data_ptr->heart_rate_status_led_value));
+  //              LOG_INFO("Indication Sent");
+                ble_data_ptr->flag_indication_in_progress = true;
+
+                // Printing the error message if the Sending Indication fails
                 if (sc != 0)
-                  LOG_ERROR("!!! Server Write Failed !!!\nError Code: 0x%x",sc);
+                  LOG_ERROR("!!! Sending Indication Failed !!!\nError Code: 0x%x",sc);
 
                 displayPrintf(DISPLAY_ROW_TEMPVALUE, "%d bpm", (int)heart_rate);
             }
-//            else if ((ble_data_ptr->flag_indication_temp == true) &&
-//                     (ble_data_ptr->flag_conection == true) &&
-//                     (ble_data_ptr->flag_indication_in_progress == true))
-//            {
-//  //              printf("%x\n%x\n%x\n",gattdb_temperature_type, sizeof(htm_temperature_buffer), htm_temperature_buffer[1]);
-//                cb_buffer_load[0] = (uint8_t) ((gattdb_temperature_type >> 8) & 0x00FF);
-//                cb_buffer_load[1] = (uint8_t) ((gattdb_temperature_type >> 0) & 0x00FF);
-//                cb_buffer_load[2] = (uint8_t) ((sizeof(htm_temperature_buffer) >> 24) & 0x000000FF);
-//                cb_buffer_load[3] = (uint8_t) ((sizeof(htm_temperature_buffer) >> 16) & 0x000000FF);
-//                cb_buffer_load[4] = (uint8_t) ((sizeof(htm_temperature_buffer) >> 8) & 0x000000FF);
-//                cb_buffer_load[5] = (uint8_t) ((sizeof(htm_temperature_buffer) >> 0) & 0x000000FF);
-//                cb_buffer_load[6] = htm_temperature_buffer[0];
-//                cb_buffer_load[7] = htm_temperature_buffer[1];
-//                cb_buffer_load[8] = htm_temperature_buffer[2];
-//                cb_buffer_load[9] = htm_temperature_buffer[3];
-//                cb_buffer_load[10] = htm_temperature_buffer[4];
-//
-//  //              // For debugging purpose only
-//  //              printf("\nOriginal\n%d\t%d\t%d\t%d\t%d\n%d\n%d\n\n", cb_buffer_load[6],
-//  //                     cb_buffer_load[7],
-//  //                     cb_buffer_load[8],
-//  //                     cb_buffer_load[9],
-//  //                     cb_buffer_load[10],
-//  //                     sizeof(htm_temperature_buffer),
-//  //                     gattdb_temperature_type);
-//  //
-//  //              printf("%d", (sizeof(cb_buffer_load)/sizeof(uint8_t))); // For debugging purpose only
-//                cbfifo_enqueue(cb_buffer_load, (sizeof(cb_buffer_load)/sizeof(uint8_t)));
-//
-//                LOG_INFO("Temperature indication added to buffer : %d indications left in the buffer", (cbfifo_length()/11));
-//            }
+            else if ((ble_data_ptr->flag_indication_button_state == true) &&
+                     (ble_data_ptr->flag_conection == true) &&
+                     (ble_data_ptr->flag_indication_in_progress == true))
+            {
+  //              printf("%x\n%x\n%x\n",gattdb_temperature_type, sizeof(htm_temperature_buffer), htm_temperature_buffer[1]);
+                cb_buffer_load[0] = (uint8_t) ((gattdb_heart_rate_led >> 8) & 0x00FF);
+                cb_buffer_load[1] = (uint8_t) ((gattdb_heart_rate_led >> 0) & 0x00FF);
+                cb_buffer_load[2] = (uint8_t) ((sizeof(ble_data_ptr->heart_rate_status_led_value) >> 24) & 0x000000FF);
+                cb_buffer_load[3] = (uint8_t) ((sizeof(ble_data_ptr->heart_rate_status_led_value) >> 16) & 0x000000FF);
+                cb_buffer_load[4] = (uint8_t) ((sizeof(ble_data_ptr->heart_rate_status_led_value) >> 8) & 0x000000FF);
+                cb_buffer_load[5] = (uint8_t) ((sizeof(ble_data_ptr->heart_rate_status_led_value) >> 0) & 0x000000FF);
+                cb_buffer_load[6] = ble_data_ptr->heart_rate_status_led_value;
+                cb_buffer_load[7] = 0;
+                cb_buffer_load[8] = 0;
+                cb_buffer_load[9] = 0;
+                cb_buffer_load[10] = 0;
 
+  //              // For debugging purpose only
+  //              printf("\nOriginal\n%d\t%d\t%d\t%d\t%d\n%d\n%d\n\n", cb_buffer_load[6],
+  //                     cb_buffer_load[7],
+  //                     cb_buffer_load[8],
+  //                     cb_buffer_load[9],
+  //                     cb_buffer_load[10],
+  //                     sizeof(htm_temperature_buffer),
+  //                     gattdb_temperature_type);
+  //
+  //              printf("%d", (sizeof(cb_buffer_load)/sizeof(uint8_t))); // For debugging purpose only
+                cbfifo_enqueue(cb_buffer_load, (sizeof(cb_buffer_load)/sizeof(uint8_t)));
 
-//            if (ble_data_ptr->flag_conection == true &&
-//                ble_data_ptr->flag_indication_button_state == true &&
-//                ble_data_ptr->flag_bonded == true &&
-//                ble_data_ptr->flag_indication_in_progress == true &&
-//                cbfifo_length() == cbfifo_capacity())
-//             {
-//               LOG_ERROR("Buffer Full!! This indication will not be stored and will be lost.");
-//             }
-//            // If indications are in flight then we will execute the below
-//            else if ((ble_data_ptr->flag_indication_temp == true) &&
-//                (ble_data_ptr->flag_conection == true) &&
-//                (ble_data_ptr->flag_indication_in_progress == false) &&
-//                cbfifo_length() != cbfifo_capacity())
-//            {
-//
-//                if (heart_rate)
-//                {
-//                  displayPrintf(DISPLAY_ROW_TEMPVALUE, " Heart Rate : %d bps", (int)heart_rate);
-//                }
-//                else
-//                {
-//                  displayPrintf(DISPLAY_ROW_TEMPVALUE, " Not Pressed ");
-//                }
-//                // Sending indication
-//                sc = sl_bt_gatt_server_send_indication(ble_data_ptr->connectionHandle,
-//                                                       gattdb_heart_rate_measurement,
-//                                                       sizeof(hrm_heartrate_buffer),
-//                                                       hrm_heartrate_buffer);
-//  //              LOG_INFO("Indication Sent");
-//                ble_data_ptr->flag_indication_in_progress = true;
-//
-//                // Printing the error message if the Sending Indication fails
-//                if (sc != 0)
-//                  LOG_ERROR("!!! Sending Indication Failed !!!\nError Code: 0x%x",sc);
-//
-//                // Writing the measurement type
-//                sc = sl_bt_gatt_server_write_attribute_value(gattdb_temperature_type,
-//                                                             0,
-//                                                             sizeof(hrm_heartrate_buffer[0]),
-//                                                             p);
-//
-//                // Printing the error message if the Server Write Failed fails
-//                if (sc != 0)
-//                  LOG_ERROR("!!! Server Write Failed !!!\nError Code: 0x%x",sc);
-//
-//                displayPrintf(DISPLAY_ROW_TEMPVALUE, "%d bpm", (int)heart_rate);
+                LOG_INFO("LED indication added to buffer : %d indications left in the buffer", (cbfifo_length()/11));
+            }
+
 
 
             memset(hr_buffer, 0, (MASTER_BUFFER*sizeof(uint32_t)));
 
-            MAX_30101_ShutDown();
+            nextState = state_Idle_hr;
           }
           else
           {
             nextState = state_Init_hr;
           }
       }
-      if (event == event_Error_temp)
+      if (event == event_SystemError_hr)
       {
-          sl_bt_system_reset(sl_bt_system_boot_mode_normal);
-          nextState = state_Idle_hr;
-      }
-    break;
-
-
-    /****************************State 3****************************/
-    case state_BufferDrain_hr:
-      nextState = event_measureMAX30101_hr; // default
-      if (event == event_I2CTransfer_IRQ_hr) //When LETIMER_UF happens
-      {
-          printf("\nState 3 : I2C Transfer Complete\n");
-
-          nextState = state_lastOne;
-      }
-      if (event == event_Error_temp)
-      {
-          sl_bt_system_reset(sl_bt_system_boot_mode_normal);
-          nextState = state_Idle_hr;
-      }
-    break;
-
-
-    /****************************State 4****************************/
-    case state_lastOne:
-      nextState = state_lastOne; // default
-      if (event == event_measureMAX30101_hr) //When LETIMER_UF happens
-      {
-//          sl_power_manager_remove_em_requirement(SL_POWER_MANAGER_EM1);
-          MAX_30101_ShutDown();
-
-          printf("State 4 : Shut Down\n");
-
-          nextState = state_Idle_hr;
-      }
-      if (event == event_Error_temp)
-      {
-          sl_bt_system_reset(sl_bt_system_boot_mode_normal);
           nextState = state_Idle_hr;
       }
     break;
@@ -695,8 +649,8 @@ void state_machine_discovery (sl_bt_msg_t *evt)
           /**Discovery of Services**/
           // Discovering Services by UUID.
           sc = sl_bt_gatt_discover_primary_services_by_uuid(ble_data_ptr->connectionHandle,
-                                                            sizeof(htm_service_uuid),
-                                                            &htm_service_uuid.id[0]);
+                                                            sizeof(hrm_service_uuid),
+                                                            &hrm_service_uuid.id[0]);
 
           // Printing the error message if the Discover Service by UUID fails
           if (sc != 0)
@@ -724,8 +678,8 @@ void state_machine_discovery (sl_bt_msg_t *evt)
           // Discovering Characteristics by UUID.
           sc = sl_bt_gatt_discover_characteristics_by_uuid(ble_data_ptr->connectionHandle,
                                                            ble_data_ptr->myServiceHandle_temp,
-                                                           sizeof(htm_characterstic_uuid),
-                                                           &htm_characterstic_uuid.id[0]);
+                                                           sizeof(hrm_characterstic_uuid),
+                                                           &hrm_characterstic_uuid.id[0]);
 
           // Printing the error message if the Discover Characterstic by UUID fails
           if (sc != 0)
@@ -754,8 +708,8 @@ void state_machine_discovery (sl_bt_msg_t *evt)
           /**Discovery of Services**/
           // Discovering Services by UUID.
           sc = sl_bt_gatt_discover_primary_services_by_uuid(ble_data_ptr->connectionHandle,
-                                                            sizeof(button_state_service_uuid),
-                                                            &button_state_service_uuid.id[0]);
+                                                            sizeof(hr_led_state_service_uuid),
+                                                            &hr_led_state_service_uuid.id[0]);
 
           // Printing the error message if the Discover Service by UUID fails
           if (sc != 0)
@@ -783,8 +737,8 @@ void state_machine_discovery (sl_bt_msg_t *evt)
           // Discovering Characteristics by UUID.
           sc = sl_bt_gatt_discover_characteristics_by_uuid(ble_data_ptr->connectionHandle,
                                                            ble_data_ptr->myServiceHandle_button_state,
-                                                           sizeof(button_state_characterstic_uuid),
-                                                           &button_state_characterstic_uuid.id[0]);
+                                                           sizeof(hr_led_state_characterstic_uuid),
+                                                           &hr_led_state_characterstic_uuid.id[0]);
 
           // Printing the error message if the Discover Characterstic by UUID fails
           if (sc != 0)
@@ -1090,7 +1044,7 @@ void createEventPB0Pressed()
 
 //    eventHandler = (eventHandler | (1<<(event_PB0Pressed_temp,-1))); // setting the first bit to 1
 
-    sl_bt_external_signal(event_PB0Pressed_temp);
+    sl_bt_external_signal(event_PB0Pressed_hr);
 
     CORE_EXIT_CRITICAL();
 
@@ -1120,7 +1074,7 @@ void createEventPB1Pressed()
 
 //    eventHandler = (eventHandler | (1<<(event_PB0Pressed_temp,-1))); // setting the first bit to 1
 
-    sl_bt_external_signal(event_PB1Pressed_temp);
+    sl_bt_external_signal(event_PB1Pressed_hr);
 
     CORE_EXIT_CRITICAL();
 
@@ -1162,6 +1116,34 @@ void createEventMAX30101Int()
     CORE_EXIT_CRITICAL();
 
 //    LOG_INFO("I2CWrite Event");
+}
+
+/**************************************************************************//**
+ * This function creates an event in the event handler. An event is set by
+ * setting the corresponding bit to 1. The bit number is the same order as
+ * of eventList.
+ *
+ * This is to say that the timer is up for TimerWaitUS (for COMP1 event)
+ *
+ * @param:
+ *      no params
+ *
+ * @return:
+ *      no return
+ *****************************************************************************/
+void createEventSystemError()
+{
+    CORE_DECLARE_IRQ_STATE;
+
+    CORE_ENTER_CRITICAL();
+
+//    eventHandler = (eventHandler | (1<<(event_timerWaitUS_IRQ-1))); // setting the first bit to 1
+
+    sl_bt_external_signal(event_SystemError_hr);
+
+    CORE_EXIT_CRITICAL();
+
+//    LOG_INFO("EVENT 2 SET");
 }
 
 

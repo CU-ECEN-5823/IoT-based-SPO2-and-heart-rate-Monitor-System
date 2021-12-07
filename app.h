@@ -58,7 +58,7 @@
 // Assignment 2
 #define LOWEST_ENERGY_MODE (2)
 #define LETIMER_ON_TIME_MS (175)
-#define LETIMER_PERIOD_MS (2000) // Will be loaded into TIMER0 COMP0 register
+#define LETIMER_PERIOD_MS (4000) // Will be loaded into TIMER0 COMP0 register
 
 
 // Assignment 5

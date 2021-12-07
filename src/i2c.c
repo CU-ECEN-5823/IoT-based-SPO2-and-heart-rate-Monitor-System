@@ -165,6 +165,7 @@ void i2c_Write_Read_blocking (uint8_t reg, uint8_t* read_data, size_t nbytes_rea
   if(trans_ret != i2cTransferDone)
       {
         LOG_ERROR("I2C Write error: %d", trans_ret); // If transfer is not done then we will log error message
+        createEventSystemError();
       }
 //  for (int i = 0; i < nbytes_read_data; i++)
 //    {
@@ -228,6 +229,7 @@ void i2c_Write_Write_blocking (uint8_t reg, uint8_t* write_data, size_t nbytes_w
   if(trans_ret != i2cTransferDone)
       {
         LOG_ERROR("I2C Write error: %d", trans_ret); // If transfer is not done then we will log error message
+        createEventSystemError();
       }
 //  for (int i =0; i < nbytes_write_data; i++)
 //    {

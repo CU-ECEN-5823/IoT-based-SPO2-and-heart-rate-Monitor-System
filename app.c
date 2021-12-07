@@ -199,7 +199,7 @@ SL_WEAK void app_process_action(void)
 
     // Assignment 5
     // Passing the pointer to the sl_bt_msg_t data structure
-    ble_handler(evt);
+//    ble_handler(evt);
 
 #if DEVICE_IS_BLE_SERVER
 
@@ -215,7 +215,7 @@ SL_WEAK void app_process_action(void)
     // Some events require responses from our application code,
     // and don’t necessarily advance our state machines.
     // For assignment 5 uncomment the next 2 function calls
-    // handle_ble_event(evt); // put this code in ble.c/.h
+    ble_handler(evt); // put this code in ble.c/.h
 
     // sequence through states driven by events
     // state_machine(evt);    // put this code in scheduler.c/.h

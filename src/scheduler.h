@@ -24,6 +24,7 @@ void state_machine_discovery (sl_bt_msg_t *evt);      // Passing the pointer to 
 void createEventErrorTemp();                          // Creating an event to handle the error cases
 void createEventPB0Pressed();                         // Creating an event to handle the Push Button 0 event
 void createEventPB1Pressed();                         // Creating an event to handle the Push Button 1 event
+void createEventSystemError();
 
 
 // Definitions for CB FIFO
@@ -75,7 +76,11 @@ enum eventList_hr {
   event_NoEvent_hr = 0,                   // No Event
   event_measureMAX30101_hr,
   event_bufferFullMAX30101_hr,
-  event_I2CTransfer_IRQ_hr
+  event_I2CTransfer_IRQ_hr,
+  state_HeartRateValue_hr,
+  event_PB0Pressed_hr,                 // Push Button 0 is pressed
+  event_PB1Pressed_hr,                 // Push Button 1 is pressed
+  event_SystemError_hr
 //  event_LEDON=2
 };
 
@@ -84,7 +89,8 @@ typedef enum
       state_Idle_hr,                      // Idle State
       state_Init_hr,
       state_BufferDrain_hr,
-      state_lastOne
+      state_lastOne,
+      state_SystemError
 } State_t_hr;
 
 

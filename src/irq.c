@@ -221,7 +221,10 @@ void GPIO_EVEN_IRQHandler(void)
 
   GPIO_IntClear(flags);
 
-  createEventPB0Pressed();
+  if (flags == 0x40)
+  {
+      createEventPB0Pressed();
+  }
 
 //  gpioLed1Toggle(); // For Debugging purpose only
 }
@@ -250,9 +253,17 @@ void GPIO_ODD_IRQHandler(void)
 
   GPIO_IntClear(flags);
 
-  createEventMAX30101Int();
+  if (flags == 0x08)
+  {
+      createEventMAX30101Int();;
+  }
+  if (flags == 0x80)
+  {
+      createEventPB1Pressed();
+  }
 
-//  createEventPB1Pressed();
+
+
 
 //  gpioLed1Toggle(); // For Debugging purpose only
 }
