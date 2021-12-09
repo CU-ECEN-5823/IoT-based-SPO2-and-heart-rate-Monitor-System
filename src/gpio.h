@@ -58,8 +58,8 @@
 #define LED_RED_pin   3 // The LED is connected to Pin 4
 
 // GREEN
-#define LED_GREEN_port  gpioPortA // The LED is connected to Port F
-#define LED_GREEN_pin   3 // The LED is connected to Pin 4
+#define LED_GREEN_port  gpioPortD // The LED is connected to Port F
+#define LED_GREEN_pin   12 // The LED is connected to Pin 4
 
 // BLUE
 #define LED_BLUE_port  gpioPortD // The LED is connected to Port F
@@ -88,6 +88,8 @@ void gpioPB0IntEnable();
 void gpioPB1IntEnable();
 void gpioPB0IntDisable();
 void gpioPB1IntDisable();
+
+void RGB_LED(bool red, bool green, bool blue);
 
 void LED_test_seq();
 

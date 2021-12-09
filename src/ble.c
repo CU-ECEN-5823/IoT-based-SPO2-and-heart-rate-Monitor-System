@@ -57,12 +57,13 @@ void ble_Init(void)
 
   // Initializing the flags to false at the start of the program
   ble_data_ptr->flag_conection = false;
-  ble_data_ptr->flag_indication_temp = false;
+  ble_data_ptr->flag_indication_hr = false;
   ble_data_ptr->flag_indication_in_progress = false;
-  ble_data_ptr->flag_indication_button_state = false;
+  ble_data_ptr->flag_indication_hr_led = false;
   ble_data_ptr->flag_bonded = false;
   ble_data_ptr->button_0_flag = false;
   ble_data_ptr->button_1_flag = false;
+  ble_data_ptr->factor = 0;
 }
 
 
@@ -86,8 +87,10 @@ void ble_handler(sl_bt_msg_t *evt) {
 
   uint8_t system_id[8], cb_buffer_load[11]={0}, cb_buffer_unload[11]={0};
 
-  float float_temp;
-  uint8_t int_button;
+  uint32_t heart_rate;
+  uint8_t heart_rate_led;
+
+  static bool led_toggle = false;
 
   switch (SL_BT_MSG_ID(evt->header))
   {
@@ -140,7 +143,7 @@ void ble_handler(sl_bt_msg_t *evt) {
           //      LOG_INFO("System Boot Event"); // For debugging purpose
 
                 displayPrintf(DISPLAY_ROW_NAME, "Server");
-                displayPrintf(DISPLAY_ROW_ASSIGNMENT, "A9");
+                displayPrintf(DISPLAY_ROW_ASSIGNMENT, "Heart Rate Monitor");
 
 
                 /**Creating Advertising Set**/
@@ -184,7 +187,7 @@ void ble_handler(sl_bt_msg_t *evt) {
           /*------------------------------Client Events------------------------------*/
 
                 displayPrintf(DISPLAY_ROW_NAME, "Client");
-                displayPrintf(DISPLAY_ROW_ASSIGNMENT, "A9");
+                displayPrintf(DISPLAY_ROW_ASSIGNMENT, "Heart Rate Monitor");
 
                  /**Setting Scanning Mode**/
                  // Setting the scanning mode
@@ -221,8 +224,9 @@ void ble_handler(sl_bt_msg_t *evt) {
 
                  displayPrintf(DISPLAY_ROW_CONNECTION, "Discovering");
 
-          #endif
+                 RGB_LED(1, 1, 1);
 
+          #endif
 
     break;
 
@@ -271,7 +275,7 @@ void ble_handler(sl_bt_msg_t *evt) {
 
               // This code will be run only if the temperature state machine is required to run if we have an active connection and the indication are ON
         #if NOP_INDICATION_CONNECTION == 1
-              if ((ble_data_ptr->flag_conection == true) && (ble_data_ptr->flag_indication_temp == true) && (ble_data_ptr->flag_bonded == true))
+              if ((ble_data_ptr->flag_conection == true) && (ble_data_ptr->flag_indication_hr == true) && (ble_data_ptr->flag_bonded == true))
               {
                   LETIMER_IntEnable(LETIMER0, LETIMER_IEN_UF);
         //          LOG_INFO("Enabled"); // For debugging purpose
@@ -280,14 +284,13 @@ void ble_handler(sl_bt_msg_t *evt) {
 
               /**Setting up the timer to poll for the circular buffer**/
               // We will poll every second
-              sc = sl_bt_system_set_soft_timer ((32768*2),   // 1 second is equal to 32768 ticks
+              sc = sl_bt_system_set_soft_timer ((32768*1),   // 1 second is equal to 32768 ticks
                                                  3,           // handle = 3
                                                  0);;         // repeating
 
               // Printing the error message if the Server Write Failed fails
               if (sc != 0)
                 LOG_ERROR("!!! Soft Timer Setup Failed !!!\nError Code: 0x%x",sc);
-
 
               displayPrintf(DISPLAY_ROW_CONNECTION, "Advertising");
               displayPrintf(DISPLAY_ROW_TEMPVALUE, "");
@@ -308,6 +311,7 @@ void ble_handler(sl_bt_msg_t *evt) {
                             SERVER_BT_ADDRESS.addr[4],
                             SERVER_BT_ADDRESS.addr[5]);
 
+              ble_data_ptr->flag_conection = true; // Setting the connection flag to true
               ble_data_ptr->connectionHandle = evt->data.evt_connection_opened.connection; // Storing the connection handle in our structure
 
               /**Security Manager Configuration**/
@@ -316,6 +320,8 @@ void ble_handler(sl_bt_msg_t *evt) {
               // Printing the error message if the Server Write Failed fails
               if (sc != 0)
                 LOG_ERROR("!!! Security Manager Configuration Failed !!!\nError Code: 0x%x",sc);
+
+              RGB_LED(1, 1, 0);
 
         #endif
 
@@ -337,8 +343,6 @@ void ble_handler(sl_bt_msg_t *evt) {
 
               LOG_INFO("Connection Closed. Reason : %x\n", evt->data.evt_connection_closed.reason);
 
-              ble_data_ptr->flag_conection = false;
-
               /**Starting Advertising**/
               // Start general advertising and enable connections.
               sc = sl_bt_advertiser_start(ble_data_ptr->advertisingSetHandle,
@@ -352,21 +356,19 @@ void ble_handler(sl_bt_msg_t *evt) {
 
               // This code will be run only if the temperature state machine is required to run if we have an active connection and the indication are ON.  Set NOP_INDICATION_CONNECTION in app.h
         #if NOP_INDICATION_CONNECTION == 1
-              if ((ble_data_ptr->flag_conection == false) || (ble_data_ptr->flag_indication_temp == false))
+              if ((ble_data_ptr->flag_conection == false) || (ble_data_ptr->flag_indication_hr == false))
                 {
                   LETIMER_IntDisable(LETIMER0, LETIMER_IEN_UF);
         //          LOG_INFO("Disabled");
                   sl_bt_gatt_set_characteristic_notification(ble_data_ptr->connectionHandle,
                                                              gattdb_temperature_measurement,
                                                              0);
-                  ble_data_ptr->flag_indication_temp = false;
-                  ble_data_ptr->flag_indication_button_state = false;
-                  ble_data_ptr->flag_bonded = false;
                 }
         #endif
 
               displayPrintf(DISPLAY_ROW_CONNECTION, "Advertising");
               displayPrintf(DISPLAY_ROW_TEMPVALUE, "");
+              displayPrintf(DISPLAY_ROW_9, "");
               gpioLed0SetOff();
               gpioLed1SetOff();
 
@@ -379,6 +381,7 @@ void ble_handler(sl_bt_msg_t *evt) {
         /*------------------------------Client Events------------------------------*/
 
               displayPrintf(DISPLAY_ROW_CONNECTION, "Discovering");
+              displayPrintf(DISPLAY_ROW_PASSKEY, "");
               displayPrintf(DISPLAY_ROW_BTADDR2, "");
               displayPrintf(DISPLAY_ROW_TEMPVALUE, "");
 
@@ -387,7 +390,7 @@ void ble_handler(sl_bt_msg_t *evt) {
               /**Disabling the Indications**/
               // Create an advertising set.
               sc = sl_bt_gatt_set_characteristic_notification(ble_data_ptr->connectionHandle,
-                                                              ble_data_ptr->myCharacteristicHandle_temp,
+                                                              ble_data_ptr->myCharacteristicHandle_hr,
                                                               0);
               // Printing the error message if the Indication Set fails
               if (sc != 0)
@@ -401,9 +404,6 @@ void ble_handler(sl_bt_msg_t *evt) {
               // Printing the error message if the Indication Set fails
               if (sc != 0)
                 LOG_ERROR("!!! Indication Set failed !!!\nError Code: 0x%x",sc);
-
-              ble_data_ptr->flag_indication_temp = false;
-              ble_data_ptr->flag_indication_button_state = false;
 
               LOG_INFO("Scanning");
 
@@ -424,6 +424,13 @@ void ble_handler(sl_bt_msg_t *evt) {
               // Printing the error message if the Advertising Start fails
               if (sc != 0)
                 LOG_ERROR("!!! Advertising Start Failed !!!\nError Code: 0x%x",sc);
+
+              ble_data_ptr->flag_bonded = false;
+              ble_data_ptr->flag_conection = false;
+              ble_data_ptr->flag_indication_hr = false;
+              ble_data_ptr->flag_indication_hr_led = false;
+
+              RGB_LED(1, 1, 1);
 
     break;
 
@@ -563,7 +570,7 @@ void ble_handler(sl_bt_msg_t *evt) {
           /*------------------------------Server Events------------------------------*/
                     // If bonded then we will use PB0 for sending indications to the client
                     if(ble_data_ptr->flag_conection == true /*&&
-                       ble_data_ptr->flag_indication_button_state == true &&
+                       ble_data_ptr->flag_indication_hr_led == true &&
                        ble_data_ptr->flag_bonded == true*/)
                     {
                         // For rising edge of the switch
@@ -571,7 +578,7 @@ void ble_handler(sl_bt_msg_t *evt) {
                         {
                             ble_data_ptr->button_state_value = 0x01;
 
-                            displayPrintf(DISPLAY_ROW_9, "Button Pressed");
+//                            displayPrintf(DISPLAY_ROW_9, "Button Pressed");
 
                         }
                         // For falling edge of the switch
@@ -579,7 +586,7 @@ void ble_handler(sl_bt_msg_t *evt) {
                         {
                             ble_data_ptr->button_state_value = 0x00;
 
-                            displayPrintf(DISPLAY_ROW_9, "Button Released");
+//                            displayPrintf(DISPLAY_ROW_9, "Button Released");
                         }
                     }
                     // Default state of button
@@ -587,7 +594,7 @@ void ble_handler(sl_bt_msg_t *evt) {
                     {
                         ble_data_ptr->button_state_value = 0x00;
 
-                        displayPrintf(DISPLAY_ROW_9, "Button Released");
+//                        displayPrintf(DISPLAY_ROW_9, "Button Released");
                     }
 
                     // Writing the default button state
@@ -601,7 +608,7 @@ void ble_handler(sl_bt_msg_t *evt) {
                       LOG_ERROR("!!! Server Write Failed !!!\nError Code: 0x%x",sc);
 
                     if (ble_data_ptr->flag_conection == true &&
-                        ble_data_ptr->flag_indication_button_state == true &&
+                        ble_data_ptr->flag_indication_hr_led == true &&
                         ble_data_ptr->flag_bonded == true &&
                         ble_data_ptr->flag_indication_in_progress == true &&
                         cbfifo_length() == cbfifo_capacity())
@@ -610,7 +617,7 @@ void ble_handler(sl_bt_msg_t *evt) {
                      }
                     // If indications are in flight then we will execute the below
                     else if (ble_data_ptr->flag_conection == true &&
-                        ble_data_ptr->flag_indication_button_state == true &&
+                        ble_data_ptr->flag_indication_hr_led == true &&
                         ble_data_ptr->flag_bonded == true &&
                         ble_data_ptr->flag_indication_in_progress == true &&
                         cbfifo_length() != cbfifo_capacity())
@@ -634,7 +641,7 @@ void ble_handler(sl_bt_msg_t *evt) {
                     }
                     // If indications are not in flight then send indications
                     else if (ble_data_ptr->flag_conection == true &&
-                             ble_data_ptr->flag_indication_button_state == true &&
+                             ble_data_ptr->flag_indication_hr_led == true &&
                              ble_data_ptr->flag_bonded == true &&
                              ble_data_ptr->flag_indication_in_progress == false)
                     {
@@ -662,6 +669,16 @@ void ble_handler(sl_bt_msg_t *evt) {
           ble_data_ptr->button_1_flag = !ble_data_ptr->button_1_flag;
       #if DEVICE_IS_BLE_SERVER
       /*------------------------------Server Events------------------------------*/
+          if (!ble_data_ptr->button_1_flag && ble_data_ptr->factor == 20)
+          {
+            ble_data_ptr->factor = 0;
+            displayPrintf(DISPLAY_ROW_10, "");
+          }
+          else if (!ble_data_ptr->button_1_flag && ble_data_ptr->factor == 0)
+          {
+              ble_data_ptr->factor = 20;
+              displayPrintf(DISPLAY_ROW_10, "Test Mode");
+          }
       #else
       /*------------------------------Client Events------------------------------*/
                 if(!ble_data_ptr->button_1_flag) // Trigger on the falling edge of the interrupt
@@ -682,12 +699,12 @@ void ble_handler(sl_bt_msg_t *evt) {
                    // Create an advertising set.
                    sc = sl_bt_gatt_set_characteristic_notification(ble_data_ptr->connectionHandle,
                                                                    ble_data_ptr->myCharacteristicHandle_button_state,
-                                                                   (!(ble_data_ptr->flag_indication_button_state))*2);
+                                                                   (!(ble_data_ptr->flag_indication_hr_led))*2);
                    // Printing the error message if the Indication Set fails
                    if (sc != 0)
                      LOG_ERROR("!!! Indication Set failed !!!\nError Code: 0x%x",sc);
 
-                   ble_data_ptr->flag_indication_button_state =! (ble_data_ptr->flag_indication_button_state);
+                   ble_data_ptr->flag_indication_hr_led =! (ble_data_ptr->flag_indication_hr_led);
                 }
 
 
@@ -726,12 +743,12 @@ void ble_handler(sl_bt_msg_t *evt) {
 #if DEVICE_IS_BLE_SERVER
       /*------------------------------Server Events------------------------------*/
       #if NOP_INDICATION_CONNECTION == 1
-            if ((ble_data_ptr->flag_conection == true) && (ble_data_ptr->flag_indication_temp == true) && (ble_data_ptr->flag_bonded == true))
+            if ((ble_data_ptr->flag_conection == true) && (ble_data_ptr->flag_indication_hr == true) && (ble_data_ptr->flag_bonded == true))
             {
               LETIMER_IntEnable(LETIMER0, LETIMER_IEN_UF);
       //        LOG_INFO("Enable"); // For debugging purpose
             }
-            else if ((ble_data_ptr->flag_conection == false) || (ble_data_ptr->flag_indication_temp == false) || (ble_data_ptr->flag_bonded == false))
+            else if ((ble_data_ptr->flag_conection == false) || (ble_data_ptr->flag_indication_hr == false) || (ble_data_ptr->flag_bonded == false))
             {
               LETIMER_IntDisable(LETIMER0, LETIMER_IEN_UF);
       //        LOG_INFO("Disable"); // For debugging purpose
@@ -779,7 +796,7 @@ void ble_handler(sl_bt_msg_t *evt) {
     //        ble_data.connectionHandle = evt->data.evt_gatt_server_characteristic_status.characteristic;
             if ((evt->data.evt_gatt_server_characteristic_status.client_config_flags) == 0x02) // sl_bt_gatt_server_client_configuration_t is set to 2 if indications are enabled
             {
-                ble_data_ptr->flag_indication_temp = true; // Setting true if there is a change in characteristics and the change is indication flag being set
+                ble_data_ptr->flag_indication_hr = true; // Setting true if there is a change in characteristics and the change is indication flag being set
 
     //            printf("indication set"); // For debugging purpose
 
@@ -787,7 +804,7 @@ void ble_handler(sl_bt_msg_t *evt) {
             }
             else
             {
-                ble_data_ptr->flag_indication_temp = false; // Setting true if there is a change in characteristics and the change is indication flag being cleared
+                ble_data_ptr->flag_indication_hr = false; // Setting true if there is a change in characteristics and the change is indication flag being cleared
 
     //            printf("indication clear"); // For debugging purpose
 
@@ -810,17 +827,17 @@ void ble_handler(sl_bt_msg_t *evt) {
     //        ble_data.connectionHandle = evt->data.evt_gatt_server_characteristic_status.characteristic;
             if ((evt->data.evt_gatt_server_characteristic_status.client_config_flags) == 0x02) // sl_bt_gatt_server_client_configuration_t is set to 2 if indications are enabled
             {
-                ble_data_ptr->flag_indication_button_state = true; // Setting true if there is a change in characteristics and the change is indication flag being set
+                ble_data_ptr->flag_indication_hr_led = true; // Setting true if there is a change in characteristics and the change is indication flag being set
 
                 gpioLed1SetOn();
             }
             else
             {
-                ble_data_ptr->flag_indication_button_state = false; // Setting true if there is a change in characteristics and the change is indication flag being cleared
+                ble_data_ptr->flag_indication_hr_led = false; // Setting true if there is a change in characteristics and the change is indication flag being cleared
 
                 gpioLed1SetOff();
 
-                displayPrintf(DISPLAY_ROW_9, "Button Released");
+//                displayPrintf(DISPLAY_ROW_9, "Button Released");
             }
           }
           else if ((evt->data.evt_gatt_server_characteristic_status.characteristic) == gattdb_heart_rate_led && \
@@ -833,12 +850,12 @@ void ble_handler(sl_bt_msg_t *evt) {
 
           // This code will be run only if the temperature state machine is required to run if we have an active connection and the indication are ON. Set NOP_INDICATION_CONNECTION in app.h
         #if NOP_INDICATION_CONNECTION == 1
-              if ((ble_data_ptr->flag_conection == true) && (ble_data_ptr->flag_indication_temp == true) && (ble_data_ptr->flag_bonded == true))
+              if ((ble_data_ptr->flag_conection == true) && (ble_data_ptr->flag_indication_hr == true) && (ble_data_ptr->flag_bonded == true))
               {
                 LETIMER_IntEnable(LETIMER0, LETIMER_IEN_UF);
         //        LOG_INFO("Enable"); // For debugging purpose
               }
-              else if ((ble_data_ptr->flag_conection == false) || (ble_data_ptr->flag_indication_temp == false) || (ble_data_ptr->flag_bonded == false))
+              else if ((ble_data_ptr->flag_conection == false) || (ble_data_ptr->flag_indication_hr == false) || (ble_data_ptr->flag_bonded == false))
               {
                 LETIMER_IntDisable(LETIMER0, LETIMER_IEN_UF);
         //        LOG_INFO("Disable"); // For debugging purpose
@@ -925,7 +942,7 @@ void ble_handler(sl_bt_msg_t *evt) {
     case sl_bt_evt_gatt_service_id:
       if(evt->data.evt_gatt_service.uuid.len == 2)
       {
-          ble_data_ptr->myServiceHandle_temp = evt->data.evt_gatt_service.service;
+          ble_data_ptr->myServiceHandle_hr = evt->data.evt_gatt_service.service;
       }
       else if(evt->data.evt_gatt_service.uuid.len == 16)
       {
@@ -942,7 +959,7 @@ void ble_handler(sl_bt_msg_t *evt) {
       if(evt->data.evt_gatt_characteristic.uuid.len == 2)
       {
           printf("!!!!%u!!!!", evt->data.evt_gatt_characteristic.uuid.len);
-          ble_data_ptr->myCharacteristicHandle_temp= evt->data.evt_gatt_characteristic.characteristic;
+          ble_data_ptr->myCharacteristicHandle_hr= evt->data.evt_gatt_characteristic.characteristic;
       }
       else if(evt->data.evt_gatt_characteristic.uuid.len == 16)
       {
@@ -959,7 +976,7 @@ void ble_handler(sl_bt_msg_t *evt) {
       // Checking if the event was triggered by the recipient of indication or any other communication
       if(evt->data.evt_gatt_characteristic_value.att_opcode == sl_bt_gatt_handle_value_indication)
       {
-          if((evt->data.evt_gatt_characteristic_value.characteristic) == (ble_data_ptr->myCharacteristicHandle_temp))
+          if((evt->data.evt_gatt_characteristic_value.characteristic) == (ble_data_ptr->myCharacteristicHandle_hr))
           {
 //              // For debugging purpose
 //              LOG_INFO("0 - %d\n1 - %d\n2 - %d\n3 - %d\n4 - %d",
@@ -971,11 +988,11 @@ void ble_handler(sl_bt_msg_t *evt) {
 
 
               // Obtaining the characteristic value received from indication.
-              float_temp = FLOAT_TO_INT32(evt->data.evt_gatt_characteristic_value.value.data);
+              heart_rate = FLOAT_TO_INT32(evt->data.evt_gatt_characteristic_value.value.data);
 
-              LOG_INFO("The present temperature is: %f C",float_temp);
+              LOG_INFO("The present heart beat is: %d bpm",heart_rate);
 
-              displayPrintf(DISPLAY_ROW_TEMPVALUE, "%d C", (uint32_t)float_temp);
+              displayPrintf(DISPLAY_ROW_TEMPVALUE, "%d bpm", (uint32_t)heart_rate);
 
               /**Indication Confirmation**/
               // Sending indication confirmation to the server
@@ -995,29 +1012,75 @@ void ble_handler(sl_bt_msg_t *evt) {
               if (sc != 0)
                 LOG_ERROR("!!! Indication Confirmation Failed !!!\nError Code: 0x%x",sc);
 
-              int_button = evt->data.evt_gatt_characteristic_value.value.data[0];
+              heart_rate_led = evt->data.evt_gatt_characteristic_value.value.data[0];
 
-              if(int_button == 0)
+              if (heart_rate_led == condition_NotUsed)
               {
-                  displayPrintf(DISPLAY_ROW_9, "Button Released");
+                  displayPrintf(DISPLAY_ROW_9, "Not Pressed");
+                  RGB_LED(0, 0, 1);
               }
-              else
+              else if (heart_rate_led == condition_Bradycardia)
               {
-                  displayPrintf(DISPLAY_ROW_9, "Button Pressed");
+                  displayPrintf(DISPLAY_ROW_9, "Bradycardia");
+                  RGB_LED(1, 0, 0);
+                  timerWaitUs_blocking(100000);
+                  RGB_LED(0, 0, 0);
+                  timerWaitUs_blocking(100000);
+                  RGB_LED(1, 0, 0);
+                  timerWaitUs_blocking(100000);
+              }
+              else if (heart_rate_led == condition_Normal)
+              {
+                  displayPrintf(DISPLAY_ROW_9, "Normal");
+
+                  RGB_LED(0, 1, 0);
+              }
+              else if (heart_rate_led == condition_Tachycardia)
+              {
+                  displayPrintf(DISPLAY_ROW_9, "Tachycardia");
+                  RGB_LED(1, 0, 0);
+                  timerWaitUs_blocking(100000);
+                  RGB_LED(0, 0, 0);
+                  timerWaitUs_blocking(100000);
+                  RGB_LED(1, 0, 0);
+                  timerWaitUs_blocking(100000);
               }
           }
       }
       else if(evt->data.evt_gatt_characteristic_value.att_opcode == sl_bt_gatt_read_response)
       {
-          int_button = evt->data.evt_gatt_characteristic_value.value.data[0];
+          heart_rate_led = evt->data.evt_gatt_characteristic_value.value.data[0];
 
-          if(int_button == 0)
+          if (heart_rate_led == condition_NotUsed)
           {
-              displayPrintf(DISPLAY_ROW_9, "Button Released");
+              displayPrintf(DISPLAY_ROW_9, "Not Pressed");
+              RGB_LED(0, 0, 1);
           }
-          else
+          else if (heart_rate_led == condition_Bradycardia)
           {
-              displayPrintf(DISPLAY_ROW_9, "Button Pressed");
+              displayPrintf(DISPLAY_ROW_9, "Bradycardia");
+              RGB_LED(1, 0, 0);
+              timerWaitUs_blocking(100000);
+              RGB_LED(0, 0, 0);
+              timerWaitUs_blocking(100000);
+              RGB_LED(1, 0, 0);
+              timerWaitUs_blocking(100000);
+          }
+          else if (heart_rate_led == condition_Normal)
+          {
+              displayPrintf(DISPLAY_ROW_9, "Normal");
+
+              RGB_LED(0, 1, 0);
+          }
+          else if (heart_rate_led == condition_Tachycardia)
+          {
+              displayPrintf(DISPLAY_ROW_9, "Tachycardia");
+              RGB_LED(1, 0, 0);
+              timerWaitUs_blocking(100000);
+              RGB_LED(0, 0, 0);
+              timerWaitUs_blocking(100000);
+              RGB_LED(1, 0, 0);
+              timerWaitUs_blocking(100000);
           }
       }
       break;

@@ -10,7 +10,7 @@
 // Include logging for this file
 #define INCLUDE_LOG_DEBUG 1
 #include "src/log.h"
-#include<string.h>
+#include <string.h>
 #include "algo.h"
 #include "autocorrelate.h"
 
@@ -204,7 +204,7 @@ void state_machine_temp (sl_bt_msg_t *evt)
 //          displayPrintf(DISPLAY_ROW_TEMPVALUE, "");
 
           if (ble_data_ptr->flag_conection == true &&
-              ble_data_ptr->flag_indication_button_state == true &&
+              ble_data_ptr->flag_indication_hr_led == true &&
               ble_data_ptr->flag_bonded == true &&
               ble_data_ptr->flag_indication_in_progress == true &&
               cbfifo_length() == cbfifo_capacity())
@@ -212,7 +212,7 @@ void state_machine_temp (sl_bt_msg_t *evt)
              LOG_ERROR("Buffer Full!! This indication will not be stored and will be lost.");
            }
           // If indications are in flight then we will execute the below
-          else if ((ble_data_ptr->flag_indication_temp == true) &&
+          else if ((ble_data_ptr->flag_indication_hr == true) &&
               (ble_data_ptr->flag_conection == true) &&
               (ble_data_ptr->flag_indication_in_progress == false) &&
               cbfifo_length() != cbfifo_capacity())
@@ -241,7 +241,7 @@ void state_machine_temp (sl_bt_msg_t *evt)
 
               displayPrintf(DISPLAY_ROW_TEMPVALUE, "%d C", (int)temperature_32);
           }
-          else if ((ble_data_ptr->flag_indication_temp == true) &&
+          else if ((ble_data_ptr->flag_indication_hr == true) &&
                    (ble_data_ptr->flag_conection == true) &&
                    (ble_data_ptr->flag_indication_in_progress == true))
           {
@@ -345,8 +345,10 @@ void state_machine_hr (sl_bt_msg_t *evt)
       nextState = state_Idle_hr; // default
       if (event == event_measureMAX30101_hr) //When LETIMER_UF happens
       {
-//          sl_power_manager_add_em_requirement(SL_POWER_MANAGER_EM1);
+          sl_power_manager_add_em_requirement(SL_POWER_MANAGER_EM1);
           MAX_30101_Init();
+
+          sl_power_manager_remove_em_requirement(SL_POWER_MANAGER_EM1);
 
 //          printf("\nState 1 : Powered Up\n");
 
@@ -365,7 +367,7 @@ void state_machine_hr (sl_bt_msg_t *evt)
       if (event == event_bufferFullMAX30101_hr) //When LETIMER_UF happens
       {
 //          printf("State 2 : Buffer full clear it\n");
-
+          sl_power_manager_add_em_requirement(SL_POWER_MANAGER_EM1);
           i2c_Write_Read_blocking(0x06, &read_ptr, sizeof(read_ptr));
 
           i2c_Write_Read_blocking(0x04, &write_ptr, sizeof(write_ptr));
@@ -405,9 +407,9 @@ void state_machine_hr (sl_bt_msg_t *evt)
           {
             hr_buffer_ptr = hr_buffer;
 
-            calc_hr = (12000*2)/(autocorrelate_detect_period(hr_buffer, MASTER_BUFFER, kAC_32bps_unsigned));
+            calc_hr = ((12000*2)/(autocorrelate_detect_period(hr_buffer, MASTER_BUFFER, kAC_32bps_unsigned))) - (ble_data_ptr->factor);
 
-            if (calc_hr == 0 || (0 <= calc_hr && calc_hr<=120))
+            if (calc_hr == 0 || (0 <= calc_hr && calc_hr<=180))
               {
                 heart_rate = calc_hr;
               }
@@ -430,6 +432,8 @@ void state_machine_hr (sl_bt_msg_t *evt)
               heart_rate = 0;
             }
 
+            sl_power_manager_remove_em_requirement(SL_POWER_MANAGER_EM1);
+
             count++;
 
 //            printf ("\nCalc_hr: %d, Heart Rate:  %d, Period: %d, finger_present: %d ", calc_hr, heart_rate, heart_rate, finger_present);
@@ -444,24 +448,29 @@ void state_machine_hr (sl_bt_msg_t *evt)
             if (heart_rate == 0)
             {
                 ble_data_ptr->heart_rate_status_led_value = condition_NotUsed;
+                displayPrintf(DISPLAY_ROW_9, "Not Pressed");
             }
             else if ((0 < heart_rate) && (heart_rate <= 60))
             {
                 ble_data_ptr->heart_rate_status_led_value = condition_Bradycardia;
+                displayPrintf(DISPLAY_ROW_9, "Bradycardia");
             }
             else if ((60 < heart_rate) && (heart_rate <= 100))
             {
                 ble_data_ptr->heart_rate_status_led_value = condition_Normal;
+                displayPrintf(DISPLAY_ROW_9, "Normal");
             }
             else if (100 <= heart_rate)
             {
                 ble_data_ptr->heart_rate_status_led_value = condition_Tachycardia;
+                displayPrintf(DISPLAY_ROW_9, "Tachycardia");
             }
+
 
   //          displayPrintf(DISPLAY_ROW_TEMPVALUE, "");
 
             if (ble_data_ptr->flag_conection == true &&
-                ble_data_ptr->flag_indication_temp == true &&
+                ble_data_ptr->flag_indication_hr == true &&
                 ble_data_ptr->flag_bonded == true &&
                 ble_data_ptr->flag_indication_in_progress == true &&
                 cbfifo_length() == cbfifo_capacity())
@@ -469,20 +478,12 @@ void state_machine_hr (sl_bt_msg_t *evt)
                LOG_ERROR("Buffer Full!! This indication will not be stored and will be lost.");
              }
             // If indications are in flight then we will execute the below
-            else if ((ble_data_ptr->flag_indication_temp == true) &&
+            else if ((ble_data_ptr->flag_indication_hr == true) &&
                 (ble_data_ptr->flag_conection == true) &&
                 (ble_data_ptr->flag_indication_in_progress == false) &&
                 cbfifo_length() != cbfifo_capacity())
             {
 
-                if (heart_rate)
-                {
-                  displayPrintf(DISPLAY_ROW_TEMPVALUE, " Heart Rate : %d bps", (int)heart_rate);
-                }
-                else
-                {
-                  displayPrintf(DISPLAY_ROW_TEMPVALUE, " Not Pressed ");
-                }
                 // Sending indication
                 sc = sl_bt_gatt_server_send_indication(ble_data_ptr->connectionHandle,
                                                        gattdb_heart_rate_measurement,
@@ -497,7 +498,7 @@ void state_machine_hr (sl_bt_msg_t *evt)
 
                 displayPrintf(DISPLAY_ROW_TEMPVALUE, "%d bpm", (int)heart_rate);
             }
-            else if ((ble_data_ptr->flag_indication_temp == true) &&
+            else if ((ble_data_ptr->flag_indication_hr == true) &&
                      (ble_data_ptr->flag_conection == true) &&
                      (ble_data_ptr->flag_indication_in_progress == true))
             {
@@ -531,10 +532,19 @@ void state_machine_hr (sl_bt_msg_t *evt)
 
 
 
+            // Writing attribute value to the GATT server
+            sc = sl_bt_gatt_server_write_attribute_value(gattdb_heart_rate_led,
+                                                         0,
+                                                         sizeof(ble_data_ptr->heart_rate_status_led_value),
+                                                         &(ble_data_ptr->heart_rate_status_led_value));
+
+            // Printing the error message if the Server Write Failed fails
+            if (sc != 0)
+              LOG_ERROR("!!! Server Write Failed !!!\nError Code: 0x%x",sc);
 
 
             if (ble_data_ptr->flag_conection == true &&
-                ble_data_ptr->flag_indication_button_state == true &&
+                ble_data_ptr->flag_indication_hr_led == true &&
                 ble_data_ptr->flag_bonded == true &&
                 ble_data_ptr->flag_indication_in_progress == true &&
                 cbfifo_length() == cbfifo_capacity())
@@ -542,7 +552,7 @@ void state_machine_hr (sl_bt_msg_t *evt)
                LOG_ERROR("Buffer Full!! This indication will not be stored and will be lost.");
              }
             // If indications are in flight then we will execute the below
-            else if ((ble_data_ptr->flag_indication_button_state == true) &&
+            else if ((ble_data_ptr->flag_indication_hr_led == true) &&
                 (ble_data_ptr->flag_conection == true) &&
                 (ble_data_ptr->flag_indication_in_progress == false) &&
                 cbfifo_length() != cbfifo_capacity())
@@ -561,7 +571,7 @@ void state_machine_hr (sl_bt_msg_t *evt)
 
                 displayPrintf(DISPLAY_ROW_TEMPVALUE, "%d bpm", (int)heart_rate);
             }
-            else if ((ble_data_ptr->flag_indication_button_state == true) &&
+            else if ((ble_data_ptr->flag_indication_hr_led == true) &&
                      (ble_data_ptr->flag_conection == true) &&
                      (ble_data_ptr->flag_indication_in_progress == true))
             {
@@ -641,6 +651,7 @@ void state_machine_discovery (sl_bt_msg_t *evt)
   {
     /****************************State 1****************************/
     case state_Idle_disc:
+
       nextState = state_Idle_disc; // default
       if (event == sl_bt_evt_connection_opened_id) // When connection Open happens
       {
@@ -654,13 +665,13 @@ void state_machine_discovery (sl_bt_msg_t *evt)
 
           // Printing the error message if the Discover Service by UUID fails
           if (sc != 0)
-            LOG_ERROR("!!! Discover Temperature Service by UUID failed !!!\nError Code: 0x%x",sc);
+            LOG_ERROR("!!! Discover Heart Rate Service by UUID failed !!!\nError Code: 0x%x",sc);
 
           nextState = state_Service_temp_disc;
       }
-      if (event == event_Error_disc || evt->header == sl_bt_evt_connection_closed_id)
+      if (event == event_Error_disc || event == sl_bt_evt_connection_closed_id || event == event_SystemError_hr)
       {
-          sl_bt_system_reset(sl_bt_system_boot_mode_normal);
+//          sl_bt_system_reset(sl_bt_system_boot_mode_normal);
           nextState = state_Idle_disc;
       }
 
@@ -669,28 +680,35 @@ void state_machine_discovery (sl_bt_msg_t *evt)
     /****************************State 2****************************/
     case state_Service_temp_disc:
 
-      nextState = state_Service_temp_disc; // Wait till service is found in the device
+      if(evt->header == sl_bt_evt_connection_closed_id)
+      {
+          nextState = state_Idle_disc;
+      }
+      else
+      {
+        nextState = state_Service_temp_disc; // Wait till service is found in the device
+      }
 
-      if ((event == sl_bt_evt_gatt_procedure_completed_id) && ((evt->data.evt_gatt_procedure_completed.result) == 0)) // When Services by UUID is successfully completed
+      if ((event == sl_bt_evt_gatt_procedure_completed_id) && ((evt->data.evt_gatt_procedure_completed.result) == 0) && (nextState == state_Service_temp_disc)) // When Services by UUID is successfully completed
       {
           LOG_INFO("State2\n"); // For debugging purpose only
           /**Discovery of Characteristics**/
           // Discovering Characteristics by UUID.
           sc = sl_bt_gatt_discover_characteristics_by_uuid(ble_data_ptr->connectionHandle,
-                                                           ble_data_ptr->myServiceHandle_temp,
+                                                           ble_data_ptr->myServiceHandle_hr,
                                                            sizeof(hrm_characterstic_uuid),
                                                            &hrm_characterstic_uuid.id[0]);
 
           // Printing the error message if the Discover Characterstic by UUID fails
           if (sc != 0)
-            LOG_ERROR("!!! Discover Temperature Characteristic by UUID failed !!!\nError Code: 0x%x",sc);
+            LOG_ERROR("!!! Discover Heart Rate Characteristic by UUID failed !!!\nError Code: 0x%x",sc);
 
 
           nextState = state_Characteristic_temp_disc;
       }
-      if (event == event_Error_disc || evt->header == sl_bt_evt_connection_closed_id)
+      if (event == event_Error_disc || event == sl_bt_evt_connection_closed_id || event == event_SystemError_hr)
       {
-          sl_bt_system_reset(sl_bt_system_boot_mode_normal);
+//          sl_bt_system_reset(sl_bt_system_boot_mode_normal);
           nextState = state_Idle_disc;
       }
 
@@ -699,8 +717,16 @@ void state_machine_discovery (sl_bt_msg_t *evt)
     /****************************State 3****************************/
     case state_Characteristic_temp_disc:
 
-      nextState = state_Characteristic_temp_disc; // Wait till service is found in the device
-      if ((event == sl_bt_evt_gatt_procedure_completed_id)) // When Characteristics by UUID is successfully completed
+      if(evt->header == sl_bt_evt_connection_closed_id)
+      {
+          nextState = state_Idle_disc;
+      }
+
+      else
+      {
+          nextState = state_Characteristic_temp_disc; // Wait till service is found in the device
+      }
+      if ((event == sl_bt_evt_gatt_procedure_completed_id) && (nextState == state_Characteristic_temp_disc)) // When Characteristics by UUID is successfully completed
       {
           LOG_INFO("State3\n"); // For debugging purpose only
 
@@ -713,13 +739,13 @@ void state_machine_discovery (sl_bt_msg_t *evt)
 
           // Printing the error message if the Discover Service by UUID fails
           if (sc != 0)
-            LOG_ERROR("!!! Discover Button Service by UUID failed !!!\nError Code: 0x%x",sc);
+            LOG_ERROR("!!! Discover Heart Rate LED Service by UUID failed !!!\nError Code: 0x%x",sc);
 
           nextState = state_Service_button_state_disc;
       }
-      if (event == event_Error_disc || evt->header == sl_bt_evt_connection_closed_id)
+      if (event == event_Error_disc || event == sl_bt_evt_connection_closed_id || event == event_SystemError_hr)
       {
-          sl_bt_system_reset(sl_bt_system_boot_mode_normal);
+//          sl_bt_system_reset(sl_bt_system_boot_mode_normal);
           nextState = state_Idle_disc;
       }
     break;
@@ -727,8 +753,16 @@ void state_machine_discovery (sl_bt_msg_t *evt)
     /****************************State 4****************************/
     case state_Service_button_state_disc:
 
-      nextState = state_Service_button_state_disc; // Wait till service is found in the device
-      if ((event == sl_bt_evt_gatt_procedure_completed_id)) // When Characteristics by UUID is successfully completed
+      if(evt->header == sl_bt_evt_connection_closed_id)
+      {
+          nextState = state_Idle_disc;
+      }
+
+      else
+      {
+          nextState = state_Service_button_state_disc; // Wait till service is found in the device
+      }
+      if ((event == sl_bt_evt_gatt_procedure_completed_id) && (nextState == state_Service_button_state_disc)) // When Characteristics by UUID is successfully completed
       {
           LOG_INFO("State4\n"); // For debugging purpose only
 
@@ -742,13 +776,13 @@ void state_machine_discovery (sl_bt_msg_t *evt)
 
           // Printing the error message if the Discover Characterstic by UUID fails
           if (sc != 0)
-            LOG_ERROR("!!! Discover Button Characteristic by UUID failed !!!\nError Code: 0x%x",sc);
+            LOG_ERROR("!!! Discover  Heart Rate LED Characteristic by UUID failed !!!\nError Code: 0x%x",sc);
 
           nextState = state_Characteristic_button_state_disc;
       }
-      if (event == event_Error_disc || evt->header == sl_bt_evt_connection_closed_id)
+      if (event == event_Error_disc || event == sl_bt_evt_connection_closed_id || event == event_SystemError_hr)
       {
-          sl_bt_system_reset(sl_bt_system_boot_mode_normal);
+//          sl_bt_system_reset(sl_bt_system_boot_mode_normal);
           nextState = state_Idle_disc;
       }
     break;
@@ -756,27 +790,35 @@ void state_machine_discovery (sl_bt_msg_t *evt)
     /****************************State 5****************************/
     case state_Characteristic_button_state_disc:
 
-      nextState = state_Characteristic_button_state_disc; // Wait till characteristic is found in the device
-      if ((event == sl_bt_evt_gatt_procedure_completed_id) && ((evt->data.evt_gatt_procedure_completed.result) == 0)) // When Characteristics by UUID is successfully completed
+      if(evt->header == sl_bt_evt_connection_closed_id)
+      {
+          nextState = state_Idle_disc;
+      }
+      else
+      {
+          nextState = state_Characteristic_button_state_disc; // Wait till characteristic is found in the device
+      }
+
+      if ((nextState == state_Characteristic_button_state_disc) && (event == sl_bt_evt_gatt_procedure_completed_id) && ((evt->data.evt_gatt_procedure_completed.result) == 0)) // When Characteristics by UUID is successfully completed
       {
           LOG_INFO("State5\n"); // For debugging purpose only
 
           /**Enabling Indications**/
           // Enabling Indications.
           sc = sl_bt_gatt_set_characteristic_notification(ble_data_ptr->connectionHandle,
-                                                          ble_data_ptr->myCharacteristicHandle_temp,
+                                                          ble_data_ptr->myCharacteristicHandle_hr,
                                                           2);
           // Printing the error message if the Indication Set fails
           if (sc != 0)
-            LOG_ERROR("!!! Temperature Indication Set failed !!!\nError Code: 0x%x",sc);
+            LOG_ERROR("!!!  Heart Rate Indication Set failed !!!\nError Code: 0x%x",sc);
 
-          ble_data_ptr->flag_indication_temp = true;
+          ble_data_ptr->flag_indication_hr = true;
 
           nextState = state_Indication_temp_disc;
       }
-      if (event == event_Error_disc || evt->header == sl_bt_evt_connection_closed_id)
+      if (event == event_Error_disc || event == sl_bt_evt_connection_closed_id || event == event_SystemError_hr)
       {
-          sl_bt_system_reset(sl_bt_system_boot_mode_normal);
+//          sl_bt_system_reset(sl_bt_system_boot_mode_normal);
           nextState = state_Idle_disc;
       }
     break;
@@ -784,8 +826,15 @@ void state_machine_discovery (sl_bt_msg_t *evt)
     /****************************State 6****************************/
     case state_Indication_temp_disc:
 
-      nextState = state_Indication_temp_disc; // Wait till characteristic is found in the device
-      if ((event == sl_bt_evt_gatt_procedure_completed_id) && ((evt->data.evt_gatt_procedure_completed.result) == 0)) // When Characteristics by UUID is successfully completed
+      if(evt->header == sl_bt_evt_connection_closed_id)
+      {
+        nextState = state_Idle_disc;
+      }
+      else
+      {
+          nextState = state_Indication_temp_disc; // Wait till characteristic is found in the device
+      }
+      if ((nextState == state_Indication_temp_disc) && (event == sl_bt_evt_gatt_procedure_completed_id) && ((evt->data.evt_gatt_procedure_completed.result) == 0)) // When Characteristics by UUID is successfully completed
       {
           LOG_INFO("State6\n"); // For debugging purpose only
 
@@ -796,26 +845,30 @@ void state_machine_discovery (sl_bt_msg_t *evt)
                                                           2);
           // Printing the error message if the Indication Set fails
           if (sc != 0)
-            LOG_ERROR("!!! Button Indication Set failed !!!\nError Code: 0x%x",sc);
+            LOG_ERROR("!!!  Heart Rate LED Indication Set failed !!!\nError Code: 0x%x",sc);
 
           if (sc == 0)
-            displayPrintf(DISPLAY_ROW_CONNECTION, "Handling Indications");
+            {
+              displayPrintf(DISPLAY_ROW_CONNECTION, "Handling Indications");
+              displayPrintf(DISPLAY_ROW_PASSKEY, "Hit Button 1 to bond");
+            }
 
-          ble_data_ptr->flag_indication_button_state = true;
 
-          nextState = state_Indication_button_state_disc;
+          ble_data_ptr->flag_indication_hr_led = true;
+
+          nextState = state_Indication_wait_disc;
       }
-      if (event == event_Error_disc || evt->header == sl_bt_evt_connection_closed_id)
+      if (event == event_Error_disc || event == sl_bt_evt_connection_closed_id || event == event_SystemError_hr)
       {
-          sl_bt_system_reset(sl_bt_system_boot_mode_normal);
+//          sl_bt_system_reset(sl_bt_system_boot_mode_normal);
           nextState = state_Idle_disc;
       }
     break;
 
     /****************************State 7****************************/
     case state_Indication_wait_disc:
+          nextState = state_Indication_wait_disc; // Wait till service is found in the device
 
-      nextState = state_Indication_button_state_disc; // Wait till service is found in the device
       if ((event == sl_bt_evt_connection_closed_id)) // When Characteristics by UUID is successfully completed
       {
           LOG_INFO("State7\n"); // For debugging purpose only
@@ -823,7 +876,7 @@ void state_machine_discovery (sl_bt_msg_t *evt)
           /**Disabling the indications on close event**/
           // Disabling indications on close event.
           sc = sl_bt_gatt_set_characteristic_notification(ble_data_ptr->connectionHandle,
-                                                          ble_data_ptr->myCharacteristicHandle_temp,
+                                                          ble_data_ptr->myCharacteristicHandle_hr,
                                                           0);
 
           // Printing the error message if the Indication Set fails
@@ -832,9 +885,9 @@ void state_machine_discovery (sl_bt_msg_t *evt)
 
           nextState = state_Idle_disc;
       }
-      if (event == event_Error_disc || evt->header == sl_bt_evt_connection_closed_id)
+      if (event == event_Error_disc || event == sl_bt_evt_connection_closed_id || event == event_SystemError_hr)
       {
-          sl_bt_system_reset(sl_bt_system_boot_mode_normal);
+//          sl_bt_system_reset(sl_bt_system_boot_mode_normal);
           nextState = state_Idle_disc;
       }
     break;

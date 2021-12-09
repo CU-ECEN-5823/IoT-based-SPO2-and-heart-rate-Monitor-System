@@ -43,7 +43,15 @@ void gpioInit()
   GPIO_PinModeSet(SENSOR_ENABLE_PORT, SENSOR_ENABLE_PIN, gpioModePushPull, false);
   GPIO_PinModeSet(DISP_EXTCOMIN_PORT, DISP_EXTCOMIN_PIN, gpioModePushPullAlternate, false);
 
+  GPIO_DriveStrengthSet(LED_RED_port, gpioDriveStrengthStrongAlternateStrong);
+  GPIO_PinModeSet(LED_RED_port, LED_RED_pin, gpioModePushPull, false); // Assignment 2: Initializing the LED0 to Push Pull Mode
 
+
+  GPIO_DriveStrengthSet(LED_GREEN_port, gpioDriveStrengthStrongAlternateStrong);
+  GPIO_PinModeSet(LED_GREEN_port, LED_GREEN_pin, gpioModePushPull, false); // Assignment 2: Initializing the LED0 to Push Pull Mode
+
+  GPIO_DriveStrengthSet(LED_BLUE_port, gpioDriveStrengthStrongAlternateStrong);
+  GPIO_PinModeSet(LED_BLUE_port, LED_BLUE_pin, gpioModePushPull, false); // Assignment 2: Initializing the LED0 to Push Pull Mode
 
 //  CMU_ClockEnable(cmuClock_GPIO, true);
 
@@ -106,6 +114,39 @@ void gpioLed1Toggle()
 void gpioLed0Toggle()
 {
   GPIO_PinOutToggle(LED0_port,LED0_pin);
+}
+
+/**************************************************************************//**
+ * Sets the color of RGB LEDs
+ *****************************************************************************/
+void RGB_LED(bool red, bool green, bool blue)
+{
+  if (red)
+  {
+      GPIO_PinOutSet (LED_RED_port, LED_RED_pin);
+  }
+  else
+  {
+      GPIO_PinOutClear (LED_RED_port, LED_RED_pin);
+  }
+
+  if (green)
+  {
+      GPIO_PinOutSet (LED_GREEN_port, LED_GREEN_pin);
+  }
+  else
+  {
+      GPIO_PinOutClear (LED_GREEN_port, LED_GREEN_pin);
+  }
+
+  if (blue)
+  {
+      GPIO_PinOutSet (LED_BLUE_port, LED_BLUE_pin);
+  }
+  else
+  {
+      GPIO_PinOutClear (LED_BLUE_port, LED_BLUE_pin);
+  }
 }
 
 /**************************************************************************//**
