@@ -1,8 +1,11 @@
 /* This header is a header file for the scheduler - scheduler.c
  * scheduler.h
  *
- *  Created on: 15 Sep 2021
- *      Author: nihalt
+ *  Modified on: 8 Dec 2021
+ *      Author:
+ *          Author 1: Nihal T
+ *          Author 2: Sudarshan J
+ *
  */
 
 #ifndef SRC_SCHEDULER_H_
@@ -16,15 +19,16 @@
 
 void createEventI2CTransfer();
 void createEventTimerWaitUs_IRQ();                    // Function for creating an event to say that the timer is up
-void createEventMeasureTempSi7021();                  // Creating an event to measure the temperature from Si7021 sensor
+void createEventMeasureHRMAX30101();                  // Creating an event to measure the temperature from Si7021 sensor
 uint32_t nextEvent ();                                // Getting the next event from the event handler and passing the event to the calling function
 //void state_machine_temp (uint32_t event);           // Passing the event number sifted from the scheduler
-void state_machine_temp (sl_bt_msg_t *evt);           // Passing the pointer to the evt data structure
+void state_machine_hr (sl_bt_msg_t *evt);             // Passing the pointer to the evt data structure
 void state_machine_discovery (sl_bt_msg_t *evt);      // Passing the pointer to the evt data structure
 void createEventErrorTemp();                          // Creating an event to handle the error cases
 void createEventPB0Pressed();                         // Creating an event to handle the Push Button 0 event
 void createEventPB1Pressed();                         // Creating an event to handle the Push Button 1 event
 void createEventSystemError();
+void createEventMAX30101Int();
 
 
 // Definitions for CB FIFO
@@ -48,49 +52,36 @@ size_t cbfifo_capacity();                             // Capacity of the buffer
 
 // This is an enum declared to identify and declare the list of events that are
 // expected to happen
-enum eventList_temp {
-  event_NoEvent_temp = 0,                // No Event
-  event_measureTempSi7021_temp = 1,      // UF IRQ
-  event_timerWaitUS_IRQ_temp = 2,        // COMP1 IRQ
-  event_I2CTransfer_IRQ_temp = 3,        // I2C Transfer IRQ
-  event_PB0Pressed_temp,                 // Push Button 0 is pressed
-  event_PB1Pressed_temp,                 // Push Button 1 is pressed
-  event_Error_temp,                      // Error Handler if I2C Write or Read Fails
-  num_Events_temp                        // Number of Events
-//  event_LEDON=2
-};
-
-
-typedef enum
-{
-      state_Idle_temp,                    // Idle State
-      state_SensorOn_temp,                // Sensor On State
-      state_I2CWriteComplete_temp,        // I2C Write Complete State
-      state_I2CReadWait_temp,             // I2C Read Wait
-      state_I2CReadComplete_temp,         // I2C Read Complete
-      numberOfStates_temp                 // Number of States
-} State_t_temp;
+//enum eventList_temp {
+//  event_NoEvent_temp = 0,                // No Event
+//  event_measureTempSi7021_temp = 1,      // UF IRQ
+//  event_timerWaitUS_IRQ_temp = 2,        // COMP1 IRQ
+//  event_I2CTransfer_IRQ_temp = 3,        // I2C Transfer IRQ
+//  event_PB0Pressed_temp,                 // Push Button 0 is pressed
+//  event_PB1Pressed_temp,                 // Push Button 1 is pressed
+//  event_Error_temp,                      // Error Handler if I2C Write or Read Fails
+//  num_Events_temp                        // Number of Events
+////  event_LEDON=2
+//};
 
 
 enum eventList_hr {
   event_NoEvent_hr = 0,                   // No Event
+  event_timerWaitUS_IRQ_hr,
   event_measureMAX30101_hr,
   event_bufferFullMAX30101_hr,
   event_I2CTransfer_IRQ_hr,
-  state_HeartRateValue_hr,
   event_PB0Pressed_hr,                 // Push Button 0 is pressed
   event_PB1Pressed_hr,                 // Push Button 1 is pressed
-  event_SystemError_hr
+  event_SystemError_hr,
+  num_Events_hr
 //  event_LEDON=2
 };
 
 typedef enum
 {
       state_Idle_hr,                      // Idle State
-      state_Init_hr,
-      state_BufferDrain_hr,
-      state_lastOne,
-      state_SystemError
+      state_Init_hr
 } State_t_hr;
 
 
@@ -105,14 +96,12 @@ enum eventList_disc {
 typedef enum
 {
       state_Idle_disc,                   // Idle State
-      state_Service_temp_disc,                // Service by UUID State
-      state_Characteristic_temp_disc,         // Characteristic by UUID State
-      state_Indication_temp_disc,
-      state_Service_button_state_disc,
-      state_Characteristic_button_state_disc,
-      state_Indication_button_state_disc,
-      state_Indication_wait_disc,
-      numberOfStates_disc                // Number of Events
+      state_Service_hr_disc,                // Service by UUID State
+      state_Characteristic_hr_disc,         // Characteristic by UUID State
+      state_Indication_hr_disc,
+      state_Service_hr_led_disc,
+      state_Characteristic_hr_led_disc,
+      state_Indication_wait_disc
 } State_t_disc;
 
 

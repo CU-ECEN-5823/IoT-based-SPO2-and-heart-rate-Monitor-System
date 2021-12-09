@@ -1,8 +1,10 @@
 /* This header is a header file for interrupt service routines - irq.c
  * iqr.h
  *
- *  Created on: 10 Sep 2021
- *      Author: nihalt
+ *  Modified on: 8 Dec 2021
+ *      Author:
+ *          Server Code: Nihal T
+ *          Client Code: Sudarshan J
  */
 
 #ifndef SRC_IRQ_H_

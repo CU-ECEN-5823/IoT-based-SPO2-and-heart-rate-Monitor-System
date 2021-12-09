@@ -1,12 +1,15 @@
 /*
  * ble.h
  *
- *  Created on: 1 Oct 2021
- *      Author: nihalt
+ *  Modified on: 8 Dec 2021
+ *      Author:
+ *          Server Code: Nihal T
+ *          Client Code: Sudarshan J
+ *
  *      Attribute: Prof. David Sluiter
- *                 UINT8_TO_BITSTREAM
- *                 UINT32_TO_BITSTREAM
- *                 UINT32_TO_FLOAT
+ *                 getBleDataPtr()
+ *                 Sequence of BLE events are directed by Prof. David Sluiter
+ *
  */
 
 #ifndef SRC_BLE_H_
@@ -41,26 +44,30 @@ typedef struct {
   uint8_t connectionHandle;
 
   bool flag_conection;
-  bool flag_indication_temp;
+  bool flag_bonded;
   bool flag_indication_in_progress;
 
-  bool flag_indication_button_state;
-  bool flag_bonded;
+  bool flag_indication_hr;
+  bool flag_indication_hr_led;
+
+//  bool flag_indication_button_state;// Remove
+
   bool button_0_flag;
   bool button_1_flag;
 
   uint8_t button_state_value;
 
+  uint8_t factor;
+
   uint8_t heart_rate_status_led_value;
 
   // For the client implementation
-  uint16_t myCharacteristicHandle_temp;
-  uint32_t myServiceHandle_temp;
+  uint16_t myCharacteristicHandle_hr;
+  uint32_t myServiceHandle_hr;
 
-
-  uint16_t myCharacteristicHandle_button_state;
-  uint32_t myServiceHandle_button_state;
-
+  // For the client implementation
+  uint16_t myCharacteristicHandle_hr_led;
+  uint32_t myServiceHandle_hr_led;
 } ble_data_struct_t;
 
 typedef enum {
@@ -113,5 +120,6 @@ ble_data_struct_t* getBleDataPtr();                                 // Function 
 void ble_Init(void);                                                // Initializing the blue tooth event
 bool serverFound();                                                 // Function to check if the desired server is found or NO
 float FLOAT_TO_INT32(const uint8_t *value_start_little_endian);     // Converting the numbers in the buffer to the floating point or integer number
+void LED_Toggle (bool status);
 
 #endif /* SRC_BLE_H_ */

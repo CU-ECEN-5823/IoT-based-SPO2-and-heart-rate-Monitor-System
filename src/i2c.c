@@ -1,8 +1,10 @@
 /*
  * i2c.c
  *
- *  Created on: 17 Sep 2021
- *      Author: nihalt
+ *  Modified on: 8 Dec 2021
+ *      Author:
+ *          Author 1: Nihal T
+ *
  */
 
 #include "i2c.h"
@@ -10,6 +12,7 @@
 // Include logging for this file
 #define INCLUDE_LOG_DEBUG 1
 #include "src/log.h"
+#include "scheduler.h"
 
 
 /**************************************************************************//**
@@ -141,7 +144,8 @@ uint16_t i2c_Read_blocking(uint8_t len)
 
 /**************************************************************************//**
  * This function sends a command to the bus with the address of the slave
- * and also sends a command that needs to be performed by the slave
+ * and also sends the register to read data from. This also holds a pointer
+ * to store the returning data.
  *
  * TrasnferSequence struct is used to make the data in the apt format to send
  * via bus
@@ -174,34 +178,6 @@ void i2c_Write_Read_blocking (uint8_t reg, uint8_t* read_data, size_t nbytes_rea
 //  printf("\n\n");
 }
 
-
-void i2c_Write_Read (uint8_t reg, uint8_t* read_data, size_t nbytes_read_data)
-{
-  i2c_Init();
-
-  transferSequence.flags = I2C_FLAG_WRITE_READ, // Write command
-  transferSequence.addr = (MAX_30101_ADDRESS<<1), // Slave address needs to be left shift by one bit
-  transferSequence.buf[0].data = &reg, // Passing the pointer that has the command data stored
-  transferSequence.buf[0].len = sizeof(reg); // Length of the command data
-  transferSequence.buf[1].data = read_data, // Passing the pointer that has the command data stored
-  transferSequence.buf[1].len = nbytes_read_data;
-
-  NVIC_SetPriority(I2C0_IRQn, 2);
-
-  NVIC_EnableIRQ(I2C0_IRQn);
-
-  // This will initialize the write command on to the bus
-  I2C_TransferReturn_TypeDef transferStatus = I2C_TransferInit(I2C0, &transferSequence);
-
-  if ((transferStatus != i2cTransferDone) && (transferStatus != i2cTransferInProgress))
-  {
-      LOG_ERROR("I2C Write Error code: %d", transferStatus);
-//      state_machine_temp (event_Error);
-  }
-
-
-
-}
 
 /**************************************************************************//**
  * This function sends a command to the bus with the address of the slave
@@ -322,96 +298,4 @@ void i2c_Read()
       LOG_ERROR("I2C Read Error code: %d", transferStatus);
 //      state_machine_temp (event_Error);
   }
-}
-
-
-/**************************************************************************//**
- * This is a function that takes in the two bytes that were received and will
- * convert it into a decimal number.
- *
- * @param:
- *      len is the number of bytes that is expected to be received from the
- *      slave.
- *
- * @return:
- *      returns the decimal equivalent of the data received
- *****************************************************************************/
-uint16_t concatenatingBytes(uint8_t len)
-{
-  // DOS: Yikes : you are starting another I2C transfer !!!!, No no no
-  //I2C_TransferReturn_TypeDef trans_ret = I2C_TransferInit(I2C0, &transferSequence);
-
-
-  // If len == 1 then the single byte of data is stored as temperature
-  if(len==1)
-  {
-      read_data = received_data[0];
-  }
-  else // If there are two bytes that are received then we will left shift the first byte of data by 8 bits and then OR with the second byte
-  {
-      read_data = received_data[0];
-      read_data <<= 8;
-      read_data |=(received_data[1]);
-  }
-
-//  printf("\nThe Temperature is : %f C ", (convertToCelcius(tempvalue))); // For debugging purpose only
-
-//  LOG_INFO("\nThe Temperature is : %f C in the logger", ((convertToCelcius(tempvalue)))); // Logs the temperature
-
-  return read_data;
-}
-
-
-/**************************************************************************//**
- * This function converts the return value from the sensor and converts it into
- * degrees. This function converts the 16 bit number to a float value and
- * returns a decimal number
- *
- * @param:
- *      val is the raw reading from the sensor (16 bit)
- *      scale is a char
- *        C for Celsius
- *        F for Fahrenheit
- *
- * @return:
- *      returns the temperature in degree celsius (floating point)
- *****************************************************************************/
-float convertToDegrees (uint16_t val, char scale)
-{
-  float float_val = ((float) val);
-  switch (scale)
-  {
-    case('C'):
-      float_val = (((175.72*val)/65536)-46.85);
-      return float_val;
-    break;
-
-    case('F'):
-          float_val = (((((175.72*val)/65536)-46.85)*1.8)+32);
-          return float_val;
-    break;
-  }
-  return 0.00;
-}
-
-
-/**************************************************************************//**
- * This function simply does the entire I2C stitching for us and gets us a
- * floating point temperature in degrees as per the users entry
- *
- * @param:
- *      scale is a char
- *        C for Celsius
- *        F for Fahrenheit
- *
- * @return:
- *      returns the temperature in degree celsius (floating point)
- *****************************************************************************/
-float getTempReadingSi7021(char scale)
-{
-  i2c_Write_blocking();
-
-  int16_t temp = i2c_Read_blocking(2);
-
-  return convertToDegrees(temp, scale); // Returns the temperature in desired scale
 }

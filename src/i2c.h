@@ -1,8 +1,10 @@
 /*
  * i2c.h
  *
- *  Created on: 17 Sep 2021
- *      Author: nihalt
+ *  Modified on: 8 Dec 2021
+ *      Author:
+ *          Author 1: Nihal T
+ *
  */
 
 #ifndef SRC_I2C_H_
@@ -28,12 +30,8 @@ void i2c_Write_blocking(); // Function to write commands to the slave - Interrup
 uint16_t i2c_Read_blocking(uint8_t len); // Function to write commands to the slave - Interrupt based
 void i2c_Write(); // Function to write commands to the slave - Interrupt based
 void i2c_Read(); // Function to read the data sent by the slave - Interrupt based
-float convertToDegrees (uint16_t val, char scale); // Function to convert the values into degrees
-float getTempReadingSi7021(char scale);
-uint16_t concatenatingBytes(uint8_t len); // Concatenates the bytes that were recieved from the I2C Read
 void i2c_Write_Read_blocking (uint8_t reg, uint8_t* read_data, size_t nbytes_read_data);
 void i2c_Write_Write_blocking (uint8_t reg, uint8_t* write_data, size_t nbytes_write_data);
-
 void i2c_Write_Read (uint8_t reg, uint8_t* read_data, size_t nbytes_read_data);
 
 

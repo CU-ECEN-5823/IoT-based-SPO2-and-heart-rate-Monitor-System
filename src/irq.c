@@ -1,8 +1,10 @@
 /*
  * irq.c
  *
- *  Created on: 10 Sep 2021
- *      Author: nihalt
+ *  Modified on: 8 Dec 2021
+ *      Author:
+ *          Server Code: Nihal T
+ *          Client Code: Sudarshan J
  */
 
 #include "irq.h"
@@ -116,7 +118,7 @@ void LETIMER0_IRQHandler()
   {
 //      LOG_INFO("UF Interrupt");
       cycles++;
-      createEventMeasureTempSi7021(); // Function for creating an event to measure temperature
+      createEventMeasureHRMAX30101(); // Function for creating an event to measure temperature
   }
 
   if (flags & LETIMER_IF_COMP1) // Overflow Flag
@@ -190,7 +192,7 @@ void I2C0_IRQHandler(void)
   else if ((trans_ret != i2cTransferDone) && (trans_ret != i2cTransferInProgress))
   {
       LOG_ERROR("I2C Error code: %d\n", trans_ret);
-      createEventErrorTemp();
+      createEventSystemError();
   }
   I2C_IntClear(I2C0, flags);
 
@@ -255,7 +257,7 @@ void GPIO_ODD_IRQHandler(void)
 
   if (flags == 0x08)
   {
-      createEventMAX30101Int();;
+      createEventMAX30101Int();
   }
   if (flags == 0x80)
   {

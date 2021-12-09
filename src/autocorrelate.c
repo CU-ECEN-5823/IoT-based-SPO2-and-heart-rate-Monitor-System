@@ -33,11 +33,11 @@ autocorrelate_detect_period(void *samples, uint32_t nsamp,
   int32_t s2 = 0;
   
   sum = 0;
-  for (int i=0; i < nsamp; i++) {
+  for (uint32_t i=0; i < nsamp; i++) {
     prev_sum = sum;
     sum = 0;
 
-    for (int k=0; k < nsamp - i; k++) {
+    for (uint32_t k=0; k < nsamp - i; k++) {
 
       switch (format) {
 

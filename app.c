@@ -122,9 +122,6 @@ SL_WEAK void app_init(void)
   // Initlializing the NVIC
   NVIC_Init();
 
-//  MAX_30101_Init();
-//
-//  MAX_30101_ShutDown();
 }
 
 
@@ -153,35 +150,6 @@ SL_WEAK void app_init(void)
 SL_WEAK void app_process_action(void)
 {
 
-//// Assignment 3
-////
-//  // Initializing the event to 0
-//  uint32_t event=0;
-//
-//  // Getting the event that is passed by the nextEvent() function
-//  event = nextEvent();
-//
-////  switch (event)
-////  {
-////    case (event_measureTempSi7021):
-////
-////        sensorEnable();
-////
-//////        gpioLed1Toggle(); // For debugging process
-////
-////        timerWaitUs_blocking(80000);
-////
-////        i2c_Write();
-////
-////        LOG_INFO("\n%d : The Temperature is : %f C\n\n",(loggerGetTimestamp(), 1)); // Logs the temperature
-////
-////        sensorDisable();
-////
-////     break;
-////  }
-//
-// // Assignment 4
-//  state_machine_temp(event);
 }
 
 
@@ -196,31 +164,17 @@ SL_WEAK void app_process_action(void)
  *****************************************************************************/
   void sl_bt_on_event(sl_bt_msg_t *evt)
   {
-
-    // Assignment 5
-    // Passing the pointer to the sl_bt_msg_t data structure
-//    ble_handler(evt);
+//    Bluetooth Event Handler
+    ble_handler(evt);
 
 #if DEVICE_IS_BLE_SERVER
 
 //    state_machine_temp(evt);
     state_machine_hr (evt);
 #else
-
+//    discovery state machine
     state_machine_discovery(evt);
 
 #endif
-
-
-    // Some events require responses from our application code,
-    // and don’t necessarily advance our state machines.
-    // For assignment 5 uncomment the next 2 function calls
-    ble_handler(evt); // put this code in ble.c/.h
-
-    // sequence through states driven by events
-    // state_machine(evt);    // put this code in scheduler.c/.h
-
-
-
   } // sl_bt_on_event()
 

@@ -1,10 +1,12 @@
 /* This function initializes the timers - timers.c
-   timers.h
-
-    Created on: 7 September 2021
-        Author: Nihal T
+ * timers.h
+ *
+ *  Modified on: 8 Dec 2021
+ *      Author:
+ *          Author 1: Nihal T
+ *          Author 2: Sudarshan J
+ *
  */
-
 
 #ifndef SRC_TIMERS_H_
 #define SRC_TIMERS_H_

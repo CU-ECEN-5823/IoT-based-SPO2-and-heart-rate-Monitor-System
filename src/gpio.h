@@ -1,12 +1,11 @@
 /*
-   gpio.h
-  
-    Created on: Dec 12, 2018
-        Author: Dan Walkes
-
-    Updated by Dave Sluiter Sept 7, 2020. moved #defines from .c to .h file.
-    Updated by Dave Sluiter Dec 31, 2020. Minor edits with #defines.
-
+ * gpio.h
+ *
+ *  Modified on: 8 Dec 2021
+ *      Author:
+ *          Author 1: Nihal T
+ *          Author 2: Sudarshan J
+ *
  */
 
 #ifndef SRC_GPIO_H_
@@ -58,8 +57,8 @@
 #define LED_RED_pin   3 // The LED is connected to Pin 4
 
 // GREEN
-#define LED_GREEN_port  gpioPortA // The LED is connected to Port F
-#define LED_GREEN_pin   3 // The LED is connected to Pin 4
+#define LED_GREEN_port  gpioPortD // The LED is connected to Port F
+#define LED_GREEN_pin   12 // The LED is connected to Pin 4
 
 // BLUE
 #define LED_BLUE_port  gpioPortD // The LED is connected to Port F
@@ -82,16 +81,19 @@ void gpioLed0Toggle();
 void sensorEnable(); // To turn ON the 7021 temperature sensor
 void sensorDisable(); // To turn OFF the 7021 temperature sensor
 
-void gpioSetDisplayExtcomin(bool flag);
+void gpioSetDisplayExtcomin();
 
 void gpioPB0IntEnable();
 void gpioPB1IntEnable();
 void gpioPB0IntDisable();
 void gpioPB1IntDisable();
 
+void RGB_LED(bool red, bool green, bool blue);
+
 void LED_test_seq();
 
 void gpioMAX30101IntEnable();
-void gpioMAX30101IntEnable();
+void gpioMAX30101IntDisable();
+
 
 #endif /* SRC_GPIO_H_ */

@@ -92,7 +92,45 @@ src/i2c.o: ../src/i2c.c \
  /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/gecko_sdk_3.2.1/platform/emlib/inc/em_emu.h \
  /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/gecko_sdk_3.2.1/platform/service/iostream/inc/sl_iostream_uart.h \
  /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/gecko_sdk_3.2.1/platform/service/iostream/inc/sl_iostream.h \
- /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/config/app_log_config.h
+ /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/config/app_log_config.h \
+ ../src/scheduler.h \
+ /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/app.h \
+ /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/gecko_sdk_3.2.1/platform/emlib/inc/em_common.h \
+ /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/gecko_sdk_3.2.1/app/common/util/app_assert/app_assert.h \
+ /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/config/app_assert_config.h \
+ /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/autogen/sl_bluetooth.h \
+ /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/config/sl_bluetooth_config.h \
+ /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/config/sl_bluetooth_connection_config.h \
+ /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/config/sl_bluetooth_advertiser_config.h \
+ /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/gecko_sdk_3.2.1/protocol/bluetooth/inc/sl_bt_stack_config.h \
+ /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/gecko_sdk_3.2.1/protocol/bluetooth/inc/sl_bt_ll_config.h \
+ /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/config/sl_rail_util_pa_config.h \
+ /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/gecko_sdk_3.2.1/platform/radio/rail_lib/common/rail_types.h \
+ /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/gecko_sdk_3.2.1/platform/radio/rail_lib/chip/efr32/efr32xg1x/rail_chip_specific.h \
+ /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/gecko_sdk_3.2.1/platform/radio/rail_lib/common/rail_features.h \
+ /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/gecko_sdk_3.2.1/platform/radio/rail_lib/common/rail_types.h \
+ /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/gecko_sdk_3.2.1/protocol/bluetooth/inc/sl_bt_api.h \
+ /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/gecko_sdk_3.2.1/protocol/bluetooth/inc/sl_bgapi.h \
+ /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/gecko_sdk_3.2.1/protocol/bluetooth/inc/sl_bt_api_compatibility.h \
+ /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/autogen/gatt_db.h \
+ /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/gecko_sdk_3.2.1/protocol/bluetooth/inc/sli_bt_gattdb_def.h \
+ /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/src/ble_device_type.h \
+ /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/src/gpio.h \
+ /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/src/lcd.h \
+ /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/src/ble_device_type.h \
+ /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/src/gpio.h \
+ /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/gecko_sdk_3.2.1/platform/middleware/glib/glib/glib.h \
+ /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/gecko_sdk_3.2.1/platform/middleware/glib/glib/glib_color.h \
+ /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/gecko_sdk_3.2.1/platform/middleware/glib/dmd/dmd.h \
+ /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/gecko_sdk_3.2.1/platform/middleware/glib/em_types.h \
+ /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/gecko_sdk_3.2.1/platform/middleware/glib/dmd/dmd.h \
+ /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/src/oscillator.h \
+ /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/src/timers.h \
+ /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/src/scheduler.h \
+ /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/src/ble.h \
+ /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/src/timers.h \
+ /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/src/lcd.h \
+ ../src/ble.h ../src/lcd.h
 /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/gecko_sdk_3.2.1/platform/common/toolchain/inc/sl_gcc_preinclude.h:
 ../src/i2c.h:
 /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/gecko_sdk_3.2.1/platform/driver/i2cspm/inc/sl_i2cspm.h:
@@ -187,3 +225,42 @@ src/i2c.o: ../src/i2c.c \
 /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/gecko_sdk_3.2.1/platform/service/iostream/inc/sl_iostream_uart.h:
 /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/gecko_sdk_3.2.1/platform/service/iostream/inc/sl_iostream.h:
 /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/config/app_log_config.h:
+../src/scheduler.h:
+/Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/app.h:
+/Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/gecko_sdk_3.2.1/platform/emlib/inc/em_common.h:
+/Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/gecko_sdk_3.2.1/app/common/util/app_assert/app_assert.h:
+/Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/config/app_assert_config.h:
+/Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/autogen/sl_bluetooth.h:
+/Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/config/sl_bluetooth_config.h:
+/Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/config/sl_bluetooth_connection_config.h:
+/Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/config/sl_bluetooth_advertiser_config.h:
+/Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/gecko_sdk_3.2.1/protocol/bluetooth/inc/sl_bt_stack_config.h:
+/Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/gecko_sdk_3.2.1/protocol/bluetooth/inc/sl_bt_ll_config.h:
+/Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/config/sl_rail_util_pa_config.h:
+/Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/gecko_sdk_3.2.1/platform/radio/rail_lib/common/rail_types.h:
+/Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/gecko_sdk_3.2.1/platform/radio/rail_lib/chip/efr32/efr32xg1x/rail_chip_specific.h:
+/Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/gecko_sdk_3.2.1/platform/radio/rail_lib/common/rail_features.h:
+/Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/gecko_sdk_3.2.1/platform/radio/rail_lib/common/rail_types.h:
+/Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/gecko_sdk_3.2.1/protocol/bluetooth/inc/sl_bt_api.h:
+/Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/gecko_sdk_3.2.1/protocol/bluetooth/inc/sl_bgapi.h:
+/Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/gecko_sdk_3.2.1/protocol/bluetooth/inc/sl_bt_api_compatibility.h:
+/Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/autogen/gatt_db.h:
+/Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/gecko_sdk_3.2.1/protocol/bluetooth/inc/sli_bt_gattdb_def.h:
+/Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/src/ble_device_type.h:
+/Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/src/gpio.h:
+/Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/src/lcd.h:
+/Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/src/ble_device_type.h:
+/Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/src/gpio.h:
+/Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/gecko_sdk_3.2.1/platform/middleware/glib/glib/glib.h:
+/Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/gecko_sdk_3.2.1/platform/middleware/glib/glib/glib_color.h:
+/Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/gecko_sdk_3.2.1/platform/middleware/glib/dmd/dmd.h:
+/Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/gecko_sdk_3.2.1/platform/middleware/glib/em_types.h:
+/Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/gecko_sdk_3.2.1/platform/middleware/glib/dmd/dmd.h:
+/Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/src/oscillator.h:
+/Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/src/timers.h:
+/Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/src/scheduler.h:
+/Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/src/ble.h:
+/Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/src/timers.h:
+/Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/src/lcd.h:
+../src/ble.h:
+../src/lcd.h:

@@ -1,8 +1,11 @@
 /* This header is to set up oscillators - oscillator.c
-   timers.h
-
-    Created on: 7 September 2021
-        Author: Nihal T
+ * oscillator.h
+ *
+ *  Modified on: 8 Dec 2021
+ *      Author:
+ *          Author 1: Nihal T
+ *          Author 2: Sudarshan J
+ *
  */
 
 

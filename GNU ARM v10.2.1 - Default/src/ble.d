@@ -130,7 +130,8 @@ src/ble.o: ../src/ble.c \
  ../src/lcd.h \
  /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/src/log.h \
  /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/src/log.h \
- /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/src/irq.h
+ /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/src/irq.h \
+ ../src/MAX_30101.h
 /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/gecko_sdk_3.2.1/platform/common/toolchain/inc/sl_gcc_preinclude.h:
 ../src/ble.h:
 /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/gecko_sdk_3.2.1/protocol/bluetooth/inc/sl_bt_api.h:
@@ -263,3 +264,4 @@ src/ble.o: ../src/ble.c \
 /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/src/log.h:
 /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/src/log.h:
 /Users/nihalt/SimplicityStudio/v5_workspace/ecen5823-assignment9-nihalthirunakarasu-master_SPO2/src/irq.h:
+../src/MAX_30101.h:

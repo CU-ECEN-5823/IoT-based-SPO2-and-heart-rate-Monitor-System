@@ -1,21 +1,14 @@
 /*
-  gpio.c
- 
-   Created on: Dec 12, 2018
-       Author: Dan Walkes
-   Updated by Dave Sluiter Dec 31, 2020. Minor edits with #defines.
-
-   March 17
-   Dave Sluiter: Use this file to define functions that set up or control GPIOs.
-
+ * gpio.h
+ *
+ *  Modified on: 8 Dec 2021
+ *      Author:
+ *          Author 1: Nihal T
+ *          Author 2: Sudarshan J
+ *
  */
 
-
-
-
 #include "gpio.h"
-
-
 
 /**************************************************************************//**
  * This function initialises the GPIO Pins. Sets modes to the appropriate pins
@@ -43,7 +36,15 @@ void gpioInit()
   GPIO_PinModeSet(SENSOR_ENABLE_PORT, SENSOR_ENABLE_PIN, gpioModePushPull, false);
   GPIO_PinModeSet(DISP_EXTCOMIN_PORT, DISP_EXTCOMIN_PIN, gpioModePushPullAlternate, false);
 
+  GPIO_DriveStrengthSet(LED_RED_port, gpioDriveStrengthStrongAlternateStrong);
+  GPIO_PinModeSet(LED_RED_port, LED_RED_pin, gpioModePushPull, false); // Assignment 2: Initializing the LED0 to Push Pull Mode
 
+
+  GPIO_DriveStrengthSet(LED_GREEN_port, gpioDriveStrengthStrongAlternateStrong);
+  GPIO_PinModeSet(LED_GREEN_port, LED_GREEN_pin, gpioModePushPull, false); // Assignment 2: Initializing the LED0 to Push Pull Mode
+
+  GPIO_DriveStrengthSet(LED_BLUE_port, gpioDriveStrengthStrongAlternateStrong);
+  GPIO_PinModeSet(LED_BLUE_port, LED_BLUE_pin, gpioModePushPull, false); // Assignment 2: Initializing the LED0 to Push Pull Mode
 
 //  CMU_ClockEnable(cmuClock_GPIO, true);
 
@@ -109,6 +110,39 @@ void gpioLed0Toggle()
 }
 
 /**************************************************************************//**
+ * Sets the color of RGB LEDs
+ *****************************************************************************/
+void RGB_LED(bool red, bool green, bool blue)
+{
+  if (red)
+  {
+      GPIO_PinOutSet (LED_RED_port, LED_RED_pin);
+  }
+  else
+  {
+      GPIO_PinOutClear (LED_RED_port, LED_RED_pin);
+  }
+
+  if (green)
+  {
+      GPIO_PinOutSet (LED_GREEN_port, LED_GREEN_pin);
+  }
+  else
+  {
+      GPIO_PinOutClear (LED_GREEN_port, LED_GREEN_pin);
+  }
+
+  if (blue)
+  {
+      GPIO_PinOutSet (LED_BLUE_port, LED_BLUE_pin);
+  }
+  else
+  {
+      GPIO_PinOutClear (LED_BLUE_port, LED_BLUE_pin);
+  }
+}
+
+/**************************************************************************//**
  * GPIO pin set to turn ON the sensor 7021 for temperature measurement
  *****************************************************************************/
 void sensorEnable()
@@ -127,7 +161,7 @@ void sensorDisable()
 /**************************************************************************//**
  * GPIO pin set to toggle the pin to provide a frequency
  *****************************************************************************/
-void gpioSetDisplayExtcomin(bool flag)
+void gpioSetDisplayExtcomin()
 {
   GPIO_PinOutToggle(DISP_EXTCOMIN_PORT,DISP_EXTCOMIN_PIN);
 }
